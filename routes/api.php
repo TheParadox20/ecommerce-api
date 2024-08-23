@@ -14,3 +14,5 @@ Route::get('/test/books', [TestController::class, 'books']);
 //
 Route::get('/home', [ProductsController::class, 'index']);
 Route::get('/listing', [ProductsController::class, 'listing']);
+Route::get('/product', [ProductsController::class, 'product']);
+Route::get('/related', [ProductsController::class, 'related']);
