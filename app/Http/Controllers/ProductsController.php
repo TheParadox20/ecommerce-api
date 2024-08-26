@@ -41,6 +41,41 @@ class ProductsController extends Controller
         $products = array_fill(0, 16, $product);
         return response()->json($products);
     }
+    public function product(Request $request){
+        $product = [
+            'id'=>'AX065',
+            'media'=>[
+                [
+                    'type'=>'image',
+                    'src'=>ProductsController::media('Product name','GrainmillOatsEdited.png'),
+                ],
+                [
+                    'type'=>'image',
+                    'src'=>ProductsController::media("Product name/media",'corp.jpg'),
+                ],
+                [
+                    'type'=>'image',
+                    'src'=>ProductsController::media("Product name/media",'stone.jpg')
+                ]
+            ],
+            'title'=>'Product title',
+            'name'=>'Product name slightly longer',
+            'price'=>400,
+            'previous'=>500,
+            'description'=> 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Minima laborum iusto delectus numquam, quod blanditiis odio vitae facere tempore corrupti repellat ipsam. Repellendus culpa iste perspiciatis perferendis cupiditate velit repudiandae!',
+            'reviews'=>230,
+            'sold'=>623,
+            'rating'=>4.5,
+            'perks'=>['Free shipping on orders over Ksh 300','Free + easy returns'],
+            'options'=>[
+                [
+                    'name'=>'size',
+                    'categories'=>['250g', '500g', '1Kg']
+                ]
+            ]
+        ];
+        return response()->json($product);
+    }
     public function related(Request $request){
         $product = [
             'id'=>'AX87OZ',
@@ -51,7 +86,46 @@ class ProductsController extends Controller
             'previous'=>500,
             'message'=>'Best seller'
         ];
-        $products = array_fill(0, 4, $product);
+        $products = array_fill(0, 10, $product);
         return response()->json($products);
+    }
+    public function details(Request $request){
+        $detail = [
+            'media'=>[
+                [
+                    'type'=>'image',
+                    'src'=>'/GrainmillOatsEdited.png',
+                ]
+            ],
+            'about'=>'Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis voluptates nihil dicta quod consectetur, sit dolor doloremque exercitationem iste odit ab ducimus sint architecto, sapiente harum totam. Dignissimos, culpa ducimus.',
+            'extras'=>[
+                [
+                    'title'=>'Laboris consequat ad',
+                    'content'=>'Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis voluptates nihil dicta quod consectetur, sit dolor doloremque exercitationem iste odit ab ducimus sint architecto, sapiente harum totam. Dignissimos, culpa ducimus.'
+                ],
+                [
+                    'title'=>'Deserunt ex',
+                    'content'=>'Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis voluptates nihil dicta quod consectetur, sit dolor doloremque exercitationem iste odit ab ducimus'
+                ]
+            ]
+        ];
+        return response()->json($detail);
+    }
+    public function reviews(Request $request){
+        $reviews = [
+            'rating'=>4.5,
+            'reviews'=>230,
+            'ratings'=>[60, 25, 10, 5, 0],
+            'reviewers'=> [
+                [
+                    'name'=>'Jane Doe',
+                    'icon'=>'',
+                    'date'=>'3d ago',
+                    'rating'=>3.5,
+                    'comment'=>'Lorem ipsum dolor sit amet consectetur adipisicing elit. Blanditiis voluptates nihil dicta quod consectetur, sit dolor doloremque exercitationem iste odit ab ducimus sint architecto, sapiente harum totam. Dignissimos, culpa ducimus.'
+                ]
+            ]
+        ];
+        return response()->json($reviews);
     }
 }
