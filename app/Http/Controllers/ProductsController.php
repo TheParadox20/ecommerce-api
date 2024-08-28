@@ -128,4 +128,13 @@ class ProductsController extends Controller
         ];
         return response()->json($reviews);
     }
+
+    public function faqs(Request $request){
+        $question = [
+            'question'=>'Delectus molestiae iure ea! Dolor quidem maiores',
+            'answer'=>'Lorem ipsum, dolor sit amet consectetur adipisicing elit. Aspernatur cumque quae, delectus molestiae iure ea! Dolor quidem maiores repudiandae nam hic earum laborum neque, quae quia similique? Repudiandae, omnis illum!'
+        ];
+        $questions = array_fill(0, 8, $question);
+        return response()->json($questions);
+    }
 }

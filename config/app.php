@@ -27,6 +27,7 @@ return [
     */
 
     'env' => env('APP_ENV', 'production'),
+    'TIARA_KEY' => env('TIARACONNECT_API_KEY'),
 
     /*
     |--------------------------------------------------------------------------
