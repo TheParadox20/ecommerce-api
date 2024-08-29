@@ -6,6 +6,7 @@ use App\Http\Controllers\TestController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\LogisticsController;
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cart', [CartController::class, 'add']);
@@ -26,3 +27,5 @@ Route::get('/reviews', [ProductsController::class, 'reviews']);
 Route::post('/contact', [MessageController::class, 'contact']);
 Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
+// admin related routes
+Route::get('/logistics', [LogisticsController::class, 'index']);
