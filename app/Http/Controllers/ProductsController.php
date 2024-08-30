@@ -41,6 +41,37 @@ class ProductsController extends Controller
         $products = array_fill(0, 16, $product);
         return response()->json($products);
     }
+    public function adminListing(Request $request){
+        $product = [
+            'id'=>'AX87OZ',
+            'image'=>ProductsController::media('Product name','GrainmillOatsEdited.png'),
+            'title'=>'Product title',
+            'name'=>'Product name and description',
+            'price'=>400,
+            'message'=>'Low Stock Alerts'
+        ];
+        $products = [
+            [
+                'name' => 'Group A',
+                'products' => array_fill(0, 8, $product),
+                'count' => 8,
+                'stock' => 43,
+            ],
+            [
+                'name' => 'Group B',
+                'products' => array_fill(0, 6, $product),
+                'count' => 6,
+                'stock' => 54,
+            ],
+            [
+                'name' => 'Group C',
+                'products' => array_fill(0, 3, $product),
+                'count' => 3,
+                'stock' => 9,
+            ],
+        ];
+        return response()->json($products);
+    }
     public function product(Request $request){
         $product = [
             'id'=>'AX065',

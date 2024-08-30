@@ -29,3 +29,4 @@ Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
 // admin related routes
 Route::get('/logistics', [LogisticsController::class, 'index']);
+Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
