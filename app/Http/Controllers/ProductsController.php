@@ -2,7 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use Illuminate\Http\Request;
+use App\Models\Product;
+use App\Models\Category;
+use App\Models\Brand;
+use App\Models\Media;
+use App\Models\ProductFAQ;
+use App\Models\Description;
+use App\Models\Variation;
 
 class ProductsController extends Controller
 {
@@ -15,19 +23,124 @@ class ProductsController extends Controller
     public static function media($product, $media){
         return url("products/".str_replace(' ', '_', $product))."/" . str_replace(' ', '_', $media);
     }
+    
     public function index(Request $request){
-        $product = [
-            'id'=>'AX87OZ',
-            'image'=>ProductsController::media('Product name','GrainmillOatsEdited.png'),
-            'title'=>'Product title',
-            'name'=>'Product name and description',
-            'price'=>400,
-            'previous'=>500,
-            'message'=>'Best seller'
-        ];
-        $products = array_fill(0, 16, $product);
+        $products = Product::with(['media','category','brand'])->get();
         return response()->json($products);
     }
+
+    public function create(Request $request){
+        $category = Category::create(['name'=>$request->category]);
+        $brand = Brand::create(['name'=>$request->brand]);
+        $product = Product::create([
+            'name'=>$request->name,
+            'category_id'=>$category->id,
+            'brand_id'=>$brand->id,
+            'about'=>$request->about,
+            'price'=>$request->price,
+            'discount'=>$request->discount,
+        ]);
+        foreach ($request->faqs as $key => $value) {
+            logger($request->faqs);
+            ProductFAQ::create([
+                'product_id'=>$product->id,
+                'question'=>$value['question'],
+                'answer'=>$value['answer'],
+            ]);
+        }
+        foreach ($request->variations as $key => $value) {
+            foreach ($value->options as $keyj => $valuej) {
+                Variation::create([
+                    'product_id'=>$product->id,
+                    'option'=>$value->name,
+                    'name'=>$valuej,
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success'=>true,
+            'id'=>$product->id
+        ]);
+    }
+    public function update(Request $request){}
+
+    public function updateDescription(Request $request){
+        try{
+            if(!Description::where('product_id',$request->id)->first())
+            Description::create([
+                'product_id'=>$request->id,
+                'description'=>$request->description
+            ]);
+            
+            $product = Product::find($request->id);
+            throw_if(!$product,'Missing product');
+
+            for ($i=0; $i < 100; $i++) { 
+                $file = $request->file("description$i");
+                if($file==null){
+                    logger("Files saved upto file :: $i");
+                    break;
+                }
+                $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
+                $name = str_replace(' ', '_', $file->getClientOriginalName());
+                $file->move($destinationPath, $name);
+                $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
+                Media::create([
+                    'product_id'=>$request->id,
+                    'purpose'=>'description',
+                    'file'=>$name,
+                    'url'=>$url,
+                ]);
+            }
+
+            return response()->json([
+                'message'=>'Description updated Succesfuly',
+                'success'=>true
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    public function updateMedia(Request $request){
+        try{
+            $product = Product::find($request->id);
+            throw_if(!$product,'Missing product');
+
+            for ($i=0; $i < 100; $i++) { 
+                $file = $request->file("media$i");
+                if($file==null){
+                    logger("Media Files saved upto file :: $i");
+                    break;
+                }
+                $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
+                $name = str_replace(' ', '_', $file->getClientOriginalName());
+                $file->move($destinationPath, $name);
+                $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
+                Media::create([
+                    'product_id'=>$request->id,
+                    'purpose'=>'media',
+                    'file'=>$name,
+                    'url'=>$url,
+                ]);
+            }
+
+            return response()->json([
+                'message'=>'Media updated Succesfuly',
+                'success'=>true
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
+    }
+
     public function listing(Request $request){
         $product = [
             'id'=>'AX87OZ',
@@ -73,39 +186,27 @@ class ProductsController extends Controller
         return response()->json($products);
     }
     public function product(Request $request){
-        $product = [
-            'id'=>'AX065',
-            'media'=>[
-                [
-                    'type'=>'image',
-                    'src'=>ProductsController::media('Product name','GrainmillOatsEdited.png'),
-                ],
-                [
-                    'type'=>'image',
-                    'src'=>ProductsController::media("Product name/media",'corp.jpg'),
-                ],
-                [
-                    'type'=>'image',
-                    'src'=>ProductsController::media("Product name/media",'stone.jpg')
-                ]
-            ],
-            'title'=>'Product title',
-            'name'=>'Product name slightly longer',
-            'price'=>400,
-            'previous'=>500,
-            'description'=> 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Minima laborum iusto delectus numquam, quod blanditiis odio vitae facere tempore corrupti repellat ipsam. Repellendus culpa iste perspiciatis perferendis cupiditate velit repudiandae!',
-            'reviews'=>230,
-            'sold'=>623,
-            'rating'=>4.5,
-            'perks'=>['Free shipping on orders over Ksh 300','Free + easy returns'],
-            'options'=>[
-                [
-                    'name'=>'size',
-                    'categories'=>['250g', '500g', '1Kg']
-                ]
-            ]
-        ];
-        return response()->json($product);
+        try{
+            $product = Product::where('name',$request->product)
+                    ->with(['media','category','brand','review', 'variation', 'description','faq'])
+                    ->first();
+            
+            throw_if(!$product,"Product $request->product not found");
+            
+            $related = Product::where('category_id',$product->category_id)
+                            ->with(['media','category','brand'])
+                            ->get();
+            
+            return response()->json([
+                'product' => $product, 
+                'related' => $related
+            ]);
+        } catch (Exception $e){
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 400);
+        }
     }
     public function related(Request $request){
         $product = [

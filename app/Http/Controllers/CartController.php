@@ -9,6 +9,7 @@ class CartController extends Controller
     public function index(Request $request){
         return response()->json([
             'temp'=>"Items",
+            'cart'=>$request->session()->get('cart')
         ]);
     }
     public function add(Request $request){

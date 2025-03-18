@@ -8,8 +8,8 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\LogisticsController;
 
+Route::get('/cart', [CartController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/cart', [CartController::class, 'add']);
     Route::post('/cart/add', [CartController::class, 'add']);
     Route::get('/user', function (Request $request) {return $request->user();});
 });
@@ -23,6 +23,10 @@ Route::get('/product', [ProductsController::class, 'product']);
 Route::get('/related', [ProductsController::class, 'related']);
 Route::get('/details', [ProductsController::class, 'details']);
 Route::get('/reviews', [ProductsController::class, 'reviews']);
+Route::post('/product/create', [ProductsController::class, 'create']);
+Route::post('/product/update', [ProductsController::class, 'update']);
+Route::post('/product/update/description', [ProductsController::class, 'updateDescription']);
+Route::post('/product/update/media', [ProductsController::class, 'updateMedia']);
 //misc....
 Route::post('/contact', [MessageController::class, 'contact']);
 Route::post('/ask', [MessageController::class, 'ask']);
