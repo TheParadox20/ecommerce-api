@@ -28,6 +28,10 @@ return [
 
     'env' => env('APP_ENV', 'production'),
     'TIARA_KEY' => env('TIARACONNECT_API_KEY'),
+    'MPESA_CONSUMER_KEY' => env('MPESA_CONSUMER_KEY'),
+    'MPESA_CONSUMER_SECRET' => env('MPESA_CONSUMER_SECRET'),
+    'MPESA_PASSKEY' => env('MPESA_PASSKEY'),
+    'MPESA_SHORTCODE' => env('MPESA_SHORTCODE'),
 
     /*
     |--------------------------------------------------------------------------

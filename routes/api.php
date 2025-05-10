@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\LogisticsController;
+use App\Http\Controllers\PaymentController;
 
 Route::get('/cart', [CartController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
@@ -34,3 +35,5 @@ Route::get('/faqs', [ProductsController::class, 'faqs']);
 // admin related routes
 Route::get('/logistics', [LogisticsController::class, 'index']);
 Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
+//payment related routes
+Route::post('/mpesa/stk', [PaymentController::class, 'mpesaSTK']);
