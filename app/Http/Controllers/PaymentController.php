@@ -28,7 +28,6 @@ class PaymentController extends Controller
             //log credentials
             logger($credentials['ConsumerKey']);
             logger($credentials['ConsumerSecret']);
-            logger($this->passkey);
             $response = $client->request('GET', 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials', [
                 'auth' => [$credentials['ConsumerKey'], $credentials['ConsumerSecret']]
             ]);
@@ -42,20 +41,20 @@ class PaymentController extends Controller
     }
     public function mpesaSTK(Request $request)
     {
-        $timestamp = date('YmdHis');
+        $timestamp = date('YmdHis', time() + 5);
+        logger($this->passkey);
+        logger($this->shortcode);
+        logger($timestamp);
         $password = base64_encode($this->shortcode . $this->passkey . $timestamp);
+        logger($password);
         $contact = '254' . preg_replace('/\D/', '', ltrim($request->phone, '+2540'));
 
         try {
             $client = new Client();
             $token = $this->getToken();
             logger($token);
-            logger($this->shortcode);
-            logger($password);
-            logger($timestamp);
             logger($request->amount);
             logger($contact);
-            logger($this->shortcode);
             
 
             $response = $client->request('POST', 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest', [
@@ -86,7 +85,6 @@ class PaymentController extends Controller
         } catch (\Exception $e) {
             return response()->json(([
                 'error'=>$e->getMessage(),
-                'request' => $contact
             ]));
         }
     }

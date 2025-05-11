@@ -36,4 +36,4 @@ Route::get('/faqs', [ProductsController::class, 'faqs']);
 Route::get('/logistics', [LogisticsController::class, 'index']);
 Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
 //payment related routes
-Route::post('/mpesa/stk', [PaymentController::class, 'mpesaSTK']);
+Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK']);
