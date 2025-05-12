@@ -41,7 +41,7 @@ class PaymentController extends Controller
     }
     public function mpesaSTK(Request $request)
     {
-        $timestamp = date('YmdHis', time() + 5);
+        $timestamp = date('YmdHis');
         logger($this->passkey);
         logger($this->shortcode);
         logger($timestamp);
@@ -71,8 +71,8 @@ class PaymentController extends Controller
                     "PartyA" => $contact,
                     "PartyB" => $this->shortcode,
                     "PhoneNumber" => $contact,
-                    "CallBackURL" => "https://api.eik.co.ke/api/mpesa/mpesaCallback",
-                    "AccountReference" => 'Item Purchase',
+                    "CallBackURL" => "https://api.ngwindsongk.com/api/mpesa/mpesaCallback",
+                    "AccountReference" => "Item Purchase",
                     "TransactionDesc" => "Payment"
                 ]
             ]);
