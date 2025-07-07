@@ -16,7 +16,7 @@ return new class extends Migration
             $table->timestamps();
             $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
             $table->string('question');
-            $table->string('answer');
+            $table->longText('answer');
         });
     }
 

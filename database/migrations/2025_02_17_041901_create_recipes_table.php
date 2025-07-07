@@ -13,6 +13,17 @@ return new class extends Migration
     {
         Schema::create('recipes', function (Blueprint $table) {
             $table->id();
+            $table->string('title');
+            $table->text('content');
+            $table->string('image')->nullable();
+            $table->text('ingredients');
+            $table->text('instructions');
+            $table->integer('cooking_time')->default(30); // in minutes
+            $table->integer('servings')->default(4);
+            $table->string('difficulty')->default('medium'); // easy, medium, hard
+            $table->string('category')->default('breakfast'); // breakfast, lunch, dinner, snack, dessert
+            $table->boolean('is_featured')->default(false);
+            $table->integer('views')->default(0);
             $table->timestamps();
         });
     }

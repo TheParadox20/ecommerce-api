@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->timestamps();
             $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->string('option');
             $table->string('name');
+            $table->string('option');
+            $table->double('price');
+            $table->double('discount')->default(0);
         });
     }
 

@@ -49,7 +49,7 @@ class ProductsController extends Controller
             ]);
         }
         foreach ($request->variations as $key => $value) {
-            foreach ($value->options as $keyj => $valuej) {
+            foreach ($value['options'] as $keyj => $valuej) {
                 Variation::create([
                     'product_id'=>$product->id,
                     'option'=>$value->name,

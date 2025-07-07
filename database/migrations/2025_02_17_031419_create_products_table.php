@@ -18,8 +18,8 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->foreignId('brand_id')->constrained('brands')->onDelete('cascade');
             $table->longText('about');
-            $table->double('price');
-            $table->double('discount')->default(0);
+            $table->double('price')->nullable();
+            $table->double('discount') ->nullable();
         });
     }
 

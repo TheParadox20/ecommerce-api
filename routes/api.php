@@ -8,6 +8,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\LogisticsController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\RecipeController;
 
 Route::get('/cart', [CartController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
@@ -28,6 +29,15 @@ Route::post('/product/create', [ProductsController::class, 'create']);
 Route::post('/product/update', [ProductsController::class, 'update']);
 Route::post('/product/update/description', [ProductsController::class, 'updateDescription']);
 Route::post('/product/update/media', [ProductsController::class, 'updateMedia']);
+//recipe related routes
+Route::get('/recipes', [RecipeController::class, 'index']);
+Route::get('/recipe', [RecipeController::class, 'show']);
+Route::get('/recipes/popular', [RecipeController::class, 'popular']);
+Route::get('/recipes/featured', [RecipeController::class, 'featured']);
+Route::get('/recipes/categories', [RecipeController::class, 'categories']);
+Route::post('/recipes', [RecipeController::class, 'store']);
+Route::put('/recipes/{id}', [RecipeController::class, 'update']);
+Route::delete('/recipes/{id}', [RecipeController::class, 'destroy']);
 //misc....
 Route::post('/contact', [MessageController::class, 'contact']);
 Route::post('/ask', [MessageController::class, 'ask']);
