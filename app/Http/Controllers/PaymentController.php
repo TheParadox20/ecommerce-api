@@ -66,12 +66,12 @@ class PaymentController extends Controller
                     "BusinessShortCode" => $this->shortcode,
                     "Password" => $password,
                     "Timestamp" => $timestamp,
-                    "TransactionType" => "CustomerPayBillOnline",
+                    "TransactionType" => "CustomerBuyGoodsOnline",
                     "Amount" => $request->amount,
                     "PartyA" => $contact,
-                    "PartyB" => $this->shortcode,
+                    "PartyB" => 960393,
                     "PhoneNumber" => $contact,
-                    "CallBackURL" => "https://api.ngwindsongk.com/api/mpesa/mpesaCallback",
+                    "CallBackURL" => "https://api.eik.co.ke/api/mpesa/mpesaCallback",
                     "AccountReference" => "Item Purchase",
                     "TransactionDesc" => "Payment"
                 ]
