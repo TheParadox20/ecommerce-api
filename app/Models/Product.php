@@ -34,9 +34,14 @@ class Product extends Model
         return $this->hasOne(Description::class);
     }
 
-    public function variation(): HasMany
+    public function productVariations(): HasMany
     {
-        return $this->hasMany(Variation::class);
+        return $this->hasMany(ProductVariation::class);
+    }
+
+    public function productImages(): HasMany
+    {
+        return $this->hasMany(ProductImage::class);
     }
 
     public function faq(): HasMany
@@ -47,10 +52,5 @@ class Product extends Model
     public function review(): HasMany
     {
         return $this->hasMany(Review::class);
-    }
-
-    public function media(): HasMany
-    {
-        return $this->hasMany(Media::class);
     }
 }

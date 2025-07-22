@@ -4,19 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Variation extends Model
+class Attribute extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'product_id',
-        'option',
         'name',
     ];
 
-    public function product(): BelongsTo
+    public function attributeValues(): HasMany
     {
-        return $this->belongsTo(Product::class);
+        return $this->hasMany(AttributeValue::class);
     }
 }

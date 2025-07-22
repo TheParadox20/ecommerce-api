@@ -19,16 +19,25 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/test/books', [TestController::class, 'books']);
 Route::get('/sms', [MessageController::class, 'sendSMS']);
 //product related routes
-Route::get('/home', [ProductsController::class, 'index']);
-Route::get('/listing', [ProductsController::class, 'listing']);
-Route::get('/product', [ProductsController::class, 'product']);
-Route::get('/related', [ProductsController::class, 'related']);
-Route::get('/details', [ProductsController::class, 'details']);
-Route::get('/reviews', [ProductsController::class, 'reviews']);
-Route::post('/product/create', [ProductsController::class, 'create']);
-Route::post('/product/update', [ProductsController::class, 'update']);
-Route::post('/product/update/description', [ProductsController::class, 'updateDescription']);
-Route::post('/product/update/media', [ProductsController::class, 'updateMedia']);
+// API Resource routes for ecommerce models
+Route::apiResource('products', App\Http\Controllers\ProductController::class);
+Route::apiResource('product-variations', App\Http\Controllers\ProductVariationController::class);
+Route::apiResource('attributes', App\Http\Controllers\AttributeController::class);
+Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueController::class);
+Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class);
+Route::apiResource('categories', App\Http\Controllers\CategoryController::class);
+
+// Optionally, comment out or remove old product-related routes for clarity
+// Route::get('/home', [ProductsController::class, 'index']);
+// Route::get('/listing', [ProductsController::class, 'listing']);
+// Route::get('/product', [ProductsController::class, 'product']);
+// Route::get('/related', [ProductsController::class, 'related']);
+// Route::get('/details', [ProductsController::class, 'details']);
+// Route::get('/reviews', [ProductsController::class, 'reviews']);
+// Route::post('/product/create', [ProductsController::class, 'create']);
+// Route::post('/product/update', [ProductsController::class, 'update']);
+// Route::post('/product/update/description', [ProductsController::class, 'updateDescription']);
+// Route::post('/product/update/media', [ProductsController::class, 'updateMedia']);
 //recipe related routes
 Route::get('/recipes', [RecipeController::class, 'index']);
 Route::get('/recipe', [RecipeController::class, 'show']);
