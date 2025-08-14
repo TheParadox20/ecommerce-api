@@ -10,13 +10,12 @@ use App\Http\Controllers\LogisticsController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RecipeController;
 
-Route::get('/cart', [CartController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/cart/add', [CartController::class, 'add']);
     Route::get('/user', function (Request $request) {return $request->user();});
 });
 // test routes
 Route::get('/test/books', [TestController::class, 'books']);
+Route::get('/test/session', [TestController::class, 'testSession']);
 Route::get('/sms', [MessageController::class, 'sendSMS']);
 //product related routes
 // API Resource routes for ecommerce models
@@ -26,6 +25,9 @@ Route::apiResource('attributes', App\Http\Controllers\AttributeController::class
 Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueController::class);
 Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class);
 Route::apiResource('categories', App\Http\Controllers\CategoryController::class);
+Route::apiResource('brands', App\Http\Controllers\BrandController::class);
+Route::apiResource('cart', CartController::class);
+Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 
 // Optionally, comment out or remove old product-related routes for clarity
 // Route::get('/home', [ProductsController::class, 'index']);

@@ -15,11 +15,16 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|unique:categories,name',
+            'name' => 'required|string',
             'parent_id' => 'nullable|exists:categories,id',
         ]);
+        // if category name exists, return it's id
+        $category = Category::where('name', $validated['name'])->first();
+        if($category){
+            return response()->json(['success'=>true, 'id'=>$category->id], 200);
+        }
         $category = Category::create($validated);
-        return response()->json($category->load(['parent', 'children', 'products']), 201);
+        return response()->json(['success'=>true, 'id'=>$category->id], 201);
     }
 
     public function show($id)

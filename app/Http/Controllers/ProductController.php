@@ -25,12 +25,12 @@ class ProductController extends Controller
             'discount' => 'nullable|numeric',
         ]);
         $product = Product::create($validated);
-        return response()->json($product->load(['productVariations.attributeValues.attribute', 'productImages', 'category']), 201);
+        return response()->json(['success'=>true, 'id'=>$product->id], 201);
     }
 
-    public function show($id)
+    public function show($name)
     {
-        $product = Product::with(['productVariations.attributeValues.attribute', 'productImages', 'category'])->findOrFail($id);
+        $product = Product::with(['productVariations.attributeValues.attribute', 'productImages', 'category', 'brand', 'faq', 'review'])->where('name', $name)->first();
         return response()->json($product);
     }
 
