@@ -26,6 +26,7 @@ Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueContro
 Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class);
 Route::apiResource('categories', App\Http\Controllers\CategoryController::class);
 Route::apiResource('brands', App\Http\Controllers\BrandController::class);
+Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class);
 Route::apiResource('cart', CartController::class);
 Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 

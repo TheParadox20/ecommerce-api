@@ -23,6 +23,7 @@ class ProductImageController extends Controller
             'product_variation_id' => 'nullable|exists:product_variations,id',
             // 'is_primary' => 'nullable|boolean',
         ]);
+        logger('request', $request->all());
         $product = Product::find($request->product_id);
         $file = $request->file("media");
         $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
@@ -30,6 +31,9 @@ class ProductImageController extends Controller
         $file->move($destinationPath, $name);
         $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
         $validated['url'] = $url;
+        if($request->is_primary){
+            $validated['is_primary'] = true;
+        }
         $image = ProductImage::create($validated);
         return response()->json($image->load(['product', 'productVariation']), 201);
     }
