@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Cart;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Product;
 
 class CartController extends Controller
 {
@@ -31,6 +32,7 @@ class CartController extends Controller
         } else {
             // Guest user - get cart from session
             $cart = $request->session()->get('cart', []);
+            logger('Session cart :: ', $cart);
             return response()->json([
                 'cart' => $cart
             ]);
@@ -112,6 +114,8 @@ class CartController extends Controller
 
             $request->session()->put('cart', $cart);
 
+            logger('Session cart :: ', $request->session()->get('cart'));
+
             return response()->json([
                 'success' => true,
                 'message' => "Added to cart",
@@ -144,7 +148,12 @@ class CartController extends Controller
                 return response()->json(['message' => 'Item not found in cart'], 404);
             }
 
-            return response()->json($item);
+            $product = Product::find($id);
+
+            return response()->json([
+                'product' => $product,
+                'quantity' => $item['quantity']
+            ]);
         } else {
             // Guest user - get from session
             $cart = $request->session()->get('cart', []);
@@ -154,7 +163,12 @@ class CartController extends Controller
                 return response()->json(['message' => 'Item not found in cart'], 404);
             }
 
-            return response()->json($item);
+            $product = Product::with(['productImages'])->find($id);
+
+            return response()->json([
+                'product' => $product,
+                'quantity' => $item['quantity']
+            ]);
         }
     }
 

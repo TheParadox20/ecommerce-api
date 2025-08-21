@@ -20,6 +20,7 @@ return new class extends Migration
             $table->longText('about');
             $table->double('price')->nullable();
             $table->double('discount') ->nullable();
+            $table->integer('stock')->default(0);
         });
     }
 

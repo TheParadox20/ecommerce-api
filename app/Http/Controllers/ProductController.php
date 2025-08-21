@@ -16,16 +16,38 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|unique:products,name',
-            'category_id' => 'required|exists:categories,id',
-            'brand_id' => 'nullable|exists:brands,id',
-            'about' => 'nullable|string',
-            'price' => 'nullable|numeric',
-            'discount' => 'nullable|numeric',
-        ]);
-        $product = Product::create($validated);
-        return response()->json(['success'=>true, 'id'=>$product->id], 201);
+        try{
+            $validated = $request->validate([
+                'name' => 'required|string|unique:products,name',
+                'category_id' => 'required|exists:categories,id',
+                'brand_id' => 'nullable|exists:brands,id',
+                'about' => 'nullable|string',
+                'price' => 'nullable|numeric',
+                'discount' => 'nullable|numeric',
+                'stock' => 'nullable|numeric',
+            ]);
+            $product = Product::create($validated);
+            return response()->json(['success'=>true, 'id'=>$product->id], 201);
+        }catch(\Illuminate\Validation\ValidationException $e){
+            $errors = $e->validator->errors();
+            logger('Product Validation Error', ['errors' => $errors]);
+            $existingProduct = Product::where('name', $request->input('name'))->first();
+            if ($existingProduct) {
+                $updateData = $request->only([
+                    'category_id',
+                    'brand_id',
+                    'about',
+                    'price',
+                    'discount',
+                    'stock'
+                ]);
+                $existingProduct->update(array_filter($updateData, function($v) { return !is_null($v); }));
+                return response()->json(['success'=>true, 'id'=>$existingProduct->id, 'updated'=>true], 200);
+            }else logger('Product not found');
+        }
+        catch(\Exception $e){
+            return response()->json(['success'=>false, 'message'=>$e->getMessage()], 500);
+        }
     }
 
     public function show($name)
@@ -54,5 +76,13 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         $product->delete();
         return response()->json(['message' => 'Product deleted']);
+    }
+
+    public function related(Request $request, $product_name)
+    {
+        //return all products that have the same category as the product_id
+        $product = Product::where('name', $product_name)->first();
+        $related = Product::where('category_id', $product->category_id)->with(['productImages','category','brand'])->get();
+        return response()->json($related);
     }
 }

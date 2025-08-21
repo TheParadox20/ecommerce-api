@@ -11,9 +11,12 @@ class ProductImageController extends Controller
     public static function media($product, $media){
         return url("products/".str_replace(' ', '_', $product))."/" . str_replace(' ', '_', $media);
     }
-    public function index()
+    public function index(Request $request)
     {
-        return ProductImage::with(['product', 'productVariation'])->get();
+        $product = $request->product;
+        return ProductImage::with(['product', 'productVariation'])->whereHas('product', function($query) use ($product) {
+            $query->where('name', $product);
+        })->get();
     }
 
     public function store(Request $request)
@@ -23,24 +26,46 @@ class ProductImageController extends Controller
             'product_variation_id' => 'nullable|exists:product_variations,id',
             // 'is_primary' => 'nullable|boolean',
         ]);
-        logger('request', $request->all());
         $product = Product::find($request->product_id);
-        $file = $request->file("media");
-        $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
-        $name = str_replace(' ', '_', $file->getClientOriginalName());
-        $file->move($destinationPath, $name);
-        $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
-        $validated['url'] = $url;
-        if($request->is_primary){
-            $validated['is_primary'] = true;
+        logger('request', $request->all());
+        if (is_array($request->file('media'))) {
+            foreach ($request->file('media') as $file) {
+                if($file && $file->isValid()){
+                    $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
+                    $name = str_replace(' ', '_', $file->getClientOriginalName());
+                    $file->move($destinationPath, $name);
+                    $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'product_variation_id' => $request->product_variation_id,
+                        'url'=>$url
+                    ]);
+                }else{
+                    logger('File is not valid');
+                }
+            }
+            return response()->json(['success' => true],201);
+        }else{
+            $file = $request->file("media");
+            $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
+            $name = str_replace(' ', '_', $file->getClientOriginalName());
+            $file->move($destinationPath, $name);
+            $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
+            $validated['url'] = $url;
+            if($request->is_primary){
+                $validated['is_primary'] = true;
+            }
+            $image = ProductImage::create($validated);
+            return response()->json($image->load(['product', 'productVariation']), 201);
         }
-        $image = ProductImage::create($validated);
-        return response()->json($image->load(['product', 'productVariation']), 201);
+        
     }
 
-    public function show($id)
+    public function show($product)
     {
-        $image = ProductImage::with(['product', 'productVariation'])->findOrFail($id);
+        $image = ProductImage::with(['product', 'productVariation'])->whereHas('product', function($query) use ($product) {
+            $query->where('name', $product);
+        })->first();
         return response()->json($image);
     }
 
