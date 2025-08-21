@@ -14,6 +14,8 @@ class ProductVariation extends Model
     protected $fillable = [
         'product_id',
         'sku',
+        'attribute_name',
+        'attribute_value',
         'price',
         'stock',
         'discount',

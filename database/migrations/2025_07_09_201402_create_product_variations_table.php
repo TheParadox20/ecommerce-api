@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('attribute_value')->nullable();
             $table->decimal('price', 10, 2);
             $table->integer('stock')->default(0);
-            $table->decimal('discount', 10, 2)->default(0);
-            $table->string('status')->default('active');
+            $table->decimal('discount', 10, 2)->nullable();
+            $table->string('status')->default('active')->nullable();
             $table->string('image')->nullable();
             $table->timestamps();
         });

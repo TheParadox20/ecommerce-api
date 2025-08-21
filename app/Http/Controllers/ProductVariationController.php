@@ -19,12 +19,14 @@ class ProductVariationController extends Controller
             'product_id' => 'required|exists:products,id',
             'price' => 'required|numeric',
             'stock' => 'required|integer',
-            'attribute_name' => 'nullable|string',
-            'attribute_value' => 'nullable|string',
+            'attribute_name' => 'required|string',
+            'attribute_value' => 'required|string',
             'discount' => 'nullable|numeric',
             'status' => 'nullable|string',
             'image' => 'nullable|string',
         ]);
+        $sku = $validated['product_id'].'-'.Str::slug($validated['attribute_name']).'-'.Str::slug($validated['attribute_value']);
+        $validated['sku'] = $sku;
         $variation = ProductVariation::create($validated);
         return response()->json([
             'success' => true,
