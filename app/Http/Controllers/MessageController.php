@@ -18,8 +18,8 @@ class MessageController extends Controller
         $endpoint = 'https://api2.tiaraconnect.io/api/messaging/sendsms'; // set the Endpoint provided.
         $apiKey = config('app.TIARA_KEY');
         $from = 'TIARACONECT';
-        $message = 'Welcome to ngwindsong';
-        $to = '254791210705'; // set a valid number using format '2547********' or '2541********'
+        $message = 'New Transaction made on your account';
+        $to = '254721815617'; // set a valid number using format '2547********' or '2541********'
 
         $requestData = [  
             'to' => $to,

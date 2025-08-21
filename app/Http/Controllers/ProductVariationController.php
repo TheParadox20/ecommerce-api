@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ProductVariation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ProductVariationController extends Controller
 {
@@ -14,41 +15,21 @@ class ProductVariationController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->all();
-
-        // If the request is a single object, wrap it in an array for uniformity
-        $variationsData = isset($data[0]) ? $data : [$data];
-
-        $createdVariations = [];
-
-        foreach ($variationsData as $variationData) {
-            $validated = validator($variationData, [
-                'product_id' => 'required|exists:products,id',
-                'sku' => 'required|string|unique:product_variations,sku',
-                'price' => 'required|numeric',
-                'stock' => 'required|integer',
-                'discount' => 'nullable|numeric',
-                'status' => 'nullable|string',
-                'image' => 'nullable|string',
-                'attribute_value_ids' => 'sometimes|array',
-                'attribute_value_ids.*' => 'integer|exists:attribute_values,id',
-            ])->validate();
-
-            // Remove attribute_value_ids before creating the variation
-            $attributeValueIds = $variationData['attribute_value_ids'] ?? [];
-            unset($validated['attribute_value_ids']);
-
-            $variation = ProductVariation::create($validated);
-
-            // Attach attribute values if provided
-            if (!empty($attributeValueIds)) {
-                $variation->attributeValues()->sync($attributeValueIds);
-            }
-
-            $createdVariations[] = $variation->load(['attributeValues.attribute', 'productImages', 'product']);
-        }
-
-        return response()->json(['success'=>true], 201);
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'price' => 'required|numeric',
+            'stock' => 'required|integer',
+            'attribute_name' => 'nullable|string',
+            'attribute_value' => 'nullable|string',
+            'discount' => 'nullable|numeric',
+            'status' => 'nullable|string',
+            'image' => 'nullable|string',
+        ]);
+        $variation = ProductVariation::create($validated);
+        return response()->json([
+            'success' => true,
+            'id' => $variation->id
+        ], 201);
     }
 
     public function show($id)
