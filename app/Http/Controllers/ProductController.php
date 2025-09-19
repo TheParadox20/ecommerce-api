@@ -80,9 +80,14 @@ class ProductController extends Controller
 
     public function related(Request $request, $product_name)
     {
-        //return all products that have the same category as the product_id
         $product = Product::where('name', $product_name)->first();
-        $related = Product::where('category_id', $product->category_id)->with(['productImages','category','brand'])->get();
+        if (!$product) {
+            return response()->json([], 200);
+        }
+        $related = Product::where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+            ->with(['productImages', 'category', 'brand'])
+            ->get();
         return response()->json($related);
     }
 }

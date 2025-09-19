@@ -9,7 +9,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        return Category::with(['parent', 'children', 'products'])->get();
+        return Category::with(['brands.products'])->get();
     }
 
     public function store(Request $request)
