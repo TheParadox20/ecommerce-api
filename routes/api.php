@@ -29,6 +29,7 @@ Route::apiResource('product-faqs', App\Http\Controllers\ProductFAQController::cl
 Route::apiResource('categories', App\Http\Controllers\CategoryController::class);
 Route::apiResource('brands', App\Http\Controllers\BrandController::class);
 Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class);
+Route::apiResource('orders', App\Http\Controllers\OrderController::class);
 Route::apiResource('cart', CartController::class);
 Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 Route::get('/related/{product_name}', [ProductController::class, 'related']);

@@ -8,10 +8,25 @@ use Illuminate\Http\Response;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $products = Product::with(['productVariations.attributeValues.attribute', 'productImages', 'category']);
+        if($request->has('category')){
+            logger('category' . $request->input('category'));
+            $products = $products->whereHas('category', function($query) use ($request) {
+                $query->where('name', $request->input('category'));
+            });
+            logger('products' . $products->get()->toJson());
+        }
+        if($request->has('brand')){
+            logger('brand' . $request->input('brand'));
+            $products = $products->whereHas('brand', function($query) use ($request) {
+                $query->where('name', $request->input('brand'));
+            });
+        }
+        // return Product::with(['productVariations.attributeValues.attribute', 'productImages', 'category'])->get();
         // List all products with variations, images, and category
-        return Product::with(['productVariations.attributeValues.attribute', 'productImages', 'category'])->get();
+        return $products->get();
     }
 
     public function store(Request $request)
