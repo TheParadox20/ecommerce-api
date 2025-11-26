@@ -26,20 +26,22 @@ class OrderController extends Controller
             'user_id' => 'nullable|exists:users,id',
             'total' => 'required|numeric',
             'payment_method' => 'nullable|string',
-            'payment_status' => 'nullable|string',
-            'payment_reference' => 'nullable|string',
+            // 'payment_reference' => 'nullable|string',
             'sales' => 'required|array',
-            'sales.*.product_id' => 'required|exists:products,id',
+            'sales.*.id' => 'required|exists:products,id',
             'sales.*.quantity' => 'required|integer',
             'sales.*.price' => 'required|numeric',
-            'sales.*.total' => 'required|numeric',
             'order_details' => 'required|array',
             'order_details.full_name' => 'required|string',
             'order_details.phone' => 'required|string',
             'order_details.address' => 'nullable|string',
             'order_details.notes' => 'nullable|string',
         ]);
-        $order = Order::create($data);
+        $order = Order::create([
+            // 'user_id' => $data['user_id'],
+            'total' => $data['total'],
+            'payment_method' => $data['payment_method'],
+        ]);
         OrderDetail::create([
             'order_id' => $order->id,
             'full_name' => $data['order_details']['full_name'],
@@ -50,10 +52,10 @@ class OrderController extends Controller
         foreach ($data['sales'] as $sale) {
             Sale::create([
                 'order_id' => $order->id,
-                'product_id' => $sale['product_id'],
+                'product_id' => $sale['id'],
                 'quantity' => $sale['quantity'],
                 'price' => $sale['price'],
-                'total' => $sale['total'],
+                'total' => $sale['price'] * $sale['quantity'],
             ]);
         }
         return response()->json([

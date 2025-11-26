@@ -20,8 +20,6 @@ return new class extends Migration
             $table->string('payment_method')->nullable();
             $table->string('payment_status')->nullable();
             $table->string('payment_reference')->nullable();
-            $table->string('payment_method')->nullable();
-            $table->string('payment_status')->nullable();
         });
     }
 
