@@ -16,8 +16,9 @@ class BrandController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
+            'category_id' => 'nullable|exists:categories,id',
         ]);
-        // if brand name exists, return it's id
+        // if brand name exists, return its id
         $brand = Brand::where('name', $validated['name'])->first();
         if($brand){
             return response()->json(['success'=>true, 'id'=>$brand->id], 200);
@@ -37,6 +38,7 @@ class BrandController extends Controller
         $brand = Brand::findOrFail($id);
         $validated = $request->validate([
             'name' => 'sometimes|string|unique:brands,name,' . $id,
+            'category_id' => 'nullable|exists:categories,id',
         ]);
         $brand->update($validated);
         return response()->json($brand->load(['products']));

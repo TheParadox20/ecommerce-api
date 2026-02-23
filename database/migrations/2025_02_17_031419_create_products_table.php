@@ -16,8 +16,8 @@ return new class extends Migration
             $table->timestamps();
             $table->string('name')->unique();
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
-            $table->foreignId('brand_id')->constrained('brands')->onDelete('cascade');
-            $table->longText('about');
+            $table->foreignId('brand_id')->nullable()->constrained('brands')->onDelete('cascade');
+            $table->longText('about')->nullable();
             $table->double('price')->nullable();
             $table->double('discount') ->nullable();
             $table->integer('stock')->default(0);

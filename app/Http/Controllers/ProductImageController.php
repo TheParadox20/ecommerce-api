@@ -24,41 +24,50 @@ class ProductImageController extends Controller
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'product_variation_id' => 'nullable|exists:product_variations,id',
-            // 'is_primary' => 'nullable|boolean',
+            'media' => 'required',
+            'is_primary' => 'nullable|string' // Admin sends 'true' as string in FormData
         ]);
-        $product = Product::find($request->product_id);
-        logger('request', $request->all());
+
+        $product = Product::findOrFail($request->product_id);
+        logger('ProductImage upload request', $request->all());
+
         if (is_array($request->file('media'))) {
             foreach ($request->file('media') as $file) {
                 if($file && $file->isValid()){
-                    $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
+                    $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
                     $name = str_replace(' ', '_', $file->getClientOriginalName());
                     $file->move($destinationPath, $name);
                     $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
+                    
                     ProductImage::create([
                         'product_id' => $product->id,
                         'product_variation_id' => $request->product_variation_id,
-                        'url'=>$url
+                        'url' => $url,
+                        'is_primary' => $request->is_primary === 'true'
                     ]);
-                }else{
-                    logger('File is not valid');
                 }
             }
-            return response()->json(['success' => true],201);
-        }else{
+            return response()->json(['success' => true], 201);
+        } else {
             $file = $request->file("media");
-            $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
+            if (!$file || !$file->isValid()) {
+                return response()->json(['success' => false, 'message' => 'Invalid file upload'], 400);
+            }
+
+            $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
             $name = str_replace(' ', '_', $file->getClientOriginalName());
             $file->move($destinationPath, $name);
             $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
-            $validated['url'] = $url;
-            if($request->is_primary){
-                $validated['is_primary'] = true;
-            }
-            $image = ProductImage::create($validated);
+
+            $image = ProductImage::create([
+                'product_id' => $product->id,
+                'product_variation_id' => $request->product_variation_id,
+                'url' => $url,
+                'is_primary' => $request->is_primary === 'true'
+            ]);
+
             return response()->json($image->load(['product', 'productVariation']), 201);
         }
-        
     }
 
     public function show($product)
