@@ -32,7 +32,7 @@ class ProductImageController extends Controller
         logger('ProductImage upload request', $request->all());
 
         if (is_array($request->file('media'))) {
-            foreach ($request->file('media') as $file) {
+            foreach ($request->file('media') as $index => $file) {
                 if($file && $file->isValid()){
                     $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
                     $name = str_replace(' ', '_', $file->getClientOriginalName());
@@ -43,7 +43,7 @@ class ProductImageController extends Controller
                         'product_id' => $product->id,
                         'product_variation_id' => $request->product_variation_id,
                         'url' => $url,
-                        'is_primary' => $request->is_primary === 'true'
+                        'is_primary' => $request->is_primary === 'true' || (!isset($request->is_primary) && $index === 0)
                     ]);
                 }
             }

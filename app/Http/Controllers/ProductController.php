@@ -80,7 +80,9 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|unique:products,name',
-            'category_id' => 'required|exists:categories,id',
+            'category' => 'required|string',
+            'category_id' => 'sometimes|exists:categories,id',
+            'brand' => 'nullable|string',
             'brand_id' => 'nullable|exists:brands,id',
             'about' => 'nullable|string',
             'price' => 'nullable|numeric|min:0',
@@ -88,15 +90,62 @@ class ProductController extends Controller
             'stock' => 'nullable|integer|min:0',
         ]);
 
+        if (isset($validated['category'])) {
+            $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
+            $validated['category_id'] = $category->id;
+            unset($validated['category']);
+        }
+
+        if (!empty($validated['brand'])) {
+            $brand = \App\Models\Brand::firstOrCreate([
+                'name' => $validated['brand'],
+                'category_id' => $validated['category_id'] ?? null
+            ]);
+            $validated['brand_id'] = $brand->id;
+            unset($validated['brand']);
+        }
+
         // Generate slug automatically
         $validated['slug'] = Str::slug($validated['name']);
 
         $product = Product::create($validated);
 
+        if ($request->has('faqs') && is_array($request->input('faqs'))) {
+            foreach ($request->input('faqs') as $faq) {
+                if (isset($faq['question']) && isset($faq['answer'])) {
+                    $product->faqs()->create([
+                        'question' => $faq['question'],
+                        'answer' => $faq['answer'],
+                    ]);
+                }
+            }
+        }
+
+        if ($request->has('attributes') && is_array($request->input('attributes'))) {
+            foreach ($request->input('attributes') as $attributeName => $values) {
+                if (is_array($values)) {
+                    foreach ($values as $attributeValue => $details) {
+                        if (is_array($details)) {
+                            \App\Models\ProductVariation::create([
+                                'product_id' => $product->id,
+                                'attribute_name' => $attributeName,
+                                'attribute_value' => $attributeValue,
+                                'sku' => strtoupper(\Illuminate\Support\Str::slug($product->name . '-' . $attributeValue)),
+                                'price' => $details['price'] ?? $product->price ?? 0,
+                                'stock' => $details['stock'] ?? 0,
+                                'discount' => $details['discount'] ?? null,
+                                'status' => 'active',
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+
         return response()->json([
             'success' => true,
             'id' => $product->id,
-            'product' => $product
+            'product' => $product->load(['faqs', 'productVariations'])
         ], 201);
     }
 
@@ -130,13 +179,30 @@ class ProductController extends Controller
 
         $validated = $request->validate([
             'name' => 'sometimes|string|unique:products,name,' . $id,
+            'category' => 'sometimes|string',
             'category_id' => 'sometimes|exists:categories,id',
+            'brand' => 'nullable|string',
             'brand_id' => 'nullable|exists:brands,id',
             'about' => 'nullable|string',
             'price' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0|max:100',
             'stock' => 'nullable|integer|min:0',
         ]);
+
+        if (isset($validated['category'])) {
+            $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
+            $validated['category_id'] = $category->id;
+            unset($validated['category']);
+        }
+        
+        if (isset($validated['brand'])) {
+            $brand = \App\Models\Brand::firstOrCreate([
+                'name' => $validated['brand'],
+                'category_id' => $validated['category_id'] ?? null
+            ]);
+            $validated['brand_id'] = $brand->id;
+            unset($validated['brand']);
+        }
 
         if (isset($validated['name'])) {
             $validated['slug'] = Str::slug($validated['name']);
