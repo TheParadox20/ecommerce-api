@@ -4,105 +4,258 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | LIST PRODUCTS (SHOP PAGE)
+    |--------------------------------------------------------------------------
+    */
     public function index(Request $request)
     {
-        $products = Product::with(['productVariations.attributeValues.attribute', 'productImages', 'category']);
-        if($request->has('category')){
-            logger('category' . $request->input('category'));
-            $products = $products->whereHas('category', function($query) use ($request) {
-                $query->where('name', $request->input('category'));
+        $products = Product::with([
+            'productVariations.attributeValues.attribute',
+            'productImages',
+            'category',
+            'brand'
+        ]);
+
+        // 🔎 Filter by category
+        if ($request->filled('category')) {
+            $products->whereHas('category', function ($query) use ($request) {
+                $query->where('name', $request->category);
             });
-            logger('products' . $products->get()->toJson());
         }
-        if($request->has('brand')){
-            logger('brand' . $request->input('brand'));
-            $products = $products->whereHas('brand', function($query) use ($request) {
-                $query->where('name', $request->input('brand'));
+
+        // 🔎 Filter by brand
+        if ($request->filled('brand')) {
+            $products->whereHas('brand', function ($query) use ($request) {
+                $query->where('name', $request->brand);
             });
         }
-        // return Product::with(['productVariations.attributeValues.attribute', 'productImages', 'category'])->get();
-        // List all products with variations, images, and category
-        return $products->get();
+
+        // 🔎 Search by name
+        if ($request->filled('search')) {
+            $products->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // 💰 Price range filter
+        if ($request->filled('min_price')) {
+            $products->where('price', '>=', $request->min_price);
+        }
+
+        if ($request->filled('max_price')) {
+            $products->where('price', '<=', $request->max_price);
+        }
+
+        // 📊 Sorting
+        if ($request->filled('sort_by')) {
+            $sort = $request->sort_by;
+
+            if ($sort === 'price_asc') {
+                $products->orderBy('price', 'asc');
+            } elseif ($sort === 'price_desc') {
+                $products->orderBy('price', 'desc');
+            } elseif ($sort === 'newest') {
+                $products->orderBy('created_at', 'desc');
+            }
+        } else {
+            $products->latest();
+        }
+
+        // 📄 Pagination (IMPORTANT)
+        return response()->json(
+            $products->paginate(20)
+        );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | STORE PRODUCT (CREATE)
+    |--------------------------------------------------------------------------
+    */
     public function store(Request $request)
     {
-        try{
-            $validated = $request->validate([
-                'name' => 'required|string|unique:products,name',
-                'category_id' => 'required|exists:categories,id',
-                'brand_id' => 'nullable|exists:brands,id',
-                'about' => 'nullable|string',
-                'price' => 'nullable|numeric',
-                'discount' => 'nullable|numeric',
-                'stock' => 'nullable|numeric',
+        $validated = $request->validate([
+            'name' => 'required|string|unique:products,name',
+            'category' => 'required|string',
+            'category_id' => 'sometimes|exists:categories,id',
+            'brand' => 'nullable|string',
+            'brand_id' => 'nullable|exists:brands,id',
+            'about' => 'nullable|string',
+            'price' => 'nullable|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0|max:100',
+            'stock' => 'nullable|integer|min:0',
+        ]);
+
+        if (isset($validated['category'])) {
+            $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
+            $validated['category_id'] = $category->id;
+            unset($validated['category']);
+        }
+
+        if (!empty($validated['brand'])) {
+            $brand = \App\Models\Brand::firstOrCreate([
+                'name' => $validated['brand'],
+                'category_id' => $validated['category_id'] ?? null
             ]);
-            $product = Product::create($validated);
-            return response()->json(['success'=>true, 'id'=>$product->id], 201);
-        }catch(\Illuminate\Validation\ValidationException $e){
-            $errors = $e->validator->errors();
-            logger('Product Validation Error', ['errors' => $errors]);
-            $existingProduct = Product::where('name', $request->input('name'))->first();
-            if ($existingProduct) {
-                $updateData = $request->only([
-                    'category_id',
-                    'brand_id',
-                    'about',
-                    'price',
-                    'discount',
-                    'stock'
-                ]);
-                $existingProduct->update(array_filter($updateData, function($v) { return !is_null($v); }));
-                return response()->json(['success'=>true, 'id'=>$existingProduct->id, 'updated'=>true], 200);
-            }else logger('Product not found');
+            $validated['brand_id'] = $brand->id;
+            unset($validated['brand']);
         }
-        catch(\Exception $e){
-            return response()->json(['success'=>false, 'message'=>$e->getMessage()], 500);
+
+        // Generate slug automatically
+        $validated['slug'] = Str::slug($validated['name']);
+
+        $product = Product::create($validated);
+
+        if ($request->has('faqs') && is_array($request->input('faqs'))) {
+            foreach ($request->input('faqs') as $faq) {
+                if (isset($faq['question']) && isset($faq['answer'])) {
+                    $product->faqs()->create([
+                        'question' => $faq['question'],
+                        'answer' => $faq['answer'],
+                    ]);
+                }
+            }
         }
+
+        if ($request->has('attributes') && is_array($request->input('attributes'))) {
+            foreach ($request->input('attributes') as $attributeName => $values) {
+                if (is_array($values)) {
+                    foreach ($values as $attributeValue => $details) {
+                        if (is_array($details)) {
+                            \App\Models\ProductVariation::create([
+                                'product_id' => $product->id,
+                                'attribute_name' => $attributeName,
+                                'attribute_value' => $attributeValue,
+                                'sku' => strtoupper(\Illuminate\Support\Str::slug($product->name . '-' . $attributeValue)),
+                                'price' => $details['price'] ?? $product->price ?? 0,
+                                'stock' => $details['stock'] ?? 0,
+                                'discount' => $details['discount'] ?? null,
+                                'status' => 'active',
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'id' => $product->id,
+            'product' => $product->load(['faqs', 'productVariations'])
+        ], 201);
     }
 
-    public function show($name)
+    /*
+    |--------------------------------------------------------------------------
+    | SHOW SINGLE PRODUCT (BY SLUG)
+    |--------------------------------------------------------------------------
+    */
+    public function show($slug)
     {
-        $product = Product::with(['productVariations.attributeValues.attribute', 'productImages', 'category', 'brand', 'faq', 'review'])->where('name', $name)->first();
+        $product = Product::with([
+            'productVariations.attributeValues.attribute',
+            'productImages',
+            'category',
+            'brand',
+            'faqs',
+            'reviews'
+        ])->where('slug', $slug)->firstOrFail();
+
         return response()->json($product);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE PRODUCT
+    |--------------------------------------------------------------------------
+    */
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
+
         $validated = $request->validate([
             'name' => 'sometimes|string|unique:products,name,' . $id,
+            'category' => 'sometimes|string',
             'category_id' => 'sometimes|exists:categories,id',
+            'brand' => 'nullable|string',
             'brand_id' => 'nullable|exists:brands,id',
             'about' => 'nullable|string',
-            'price' => 'nullable|numeric',
-            'discount' => 'nullable|numeric',
+            'price' => 'nullable|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0|max:100',
+            'stock' => 'nullable|integer|min:0',
         ]);
+
+        if (isset($validated['category'])) {
+            $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
+            $validated['category_id'] = $category->id;
+            unset($validated['category']);
+        }
+        
+        if (isset($validated['brand'])) {
+            $brand = \App\Models\Brand::firstOrCreate([
+                'name' => $validated['brand'],
+                'category_id' => $validated['category_id'] ?? null
+            ]);
+            $validated['brand_id'] = $brand->id;
+            unset($validated['brand']);
+        }
+
+        if (isset($validated['name'])) {
+            $validated['slug'] = Str::slug($validated['name']);
+        }
+
         $product->update($validated);
-        return response()->json($product->load(['productVariations.attributeValues.attribute', 'productImages', 'category']));
+
+        return response()->json([
+            'success' => true,
+            'product' => $product->load([
+                'productVariations.attributeValues.attribute',
+                'productImages',
+                'category',
+                'brand'
+            ])
+        ]);
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE PRODUCT (SOFT DELETE)
+    |--------------------------------------------------------------------------
+    */
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
         $product->delete();
-        return response()->json(['message' => 'Product deleted']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Product deleted successfully'
+        ]);
     }
 
-    public function related(Request $request, $product_name)
+    /*
+    |--------------------------------------------------------------------------
+    | RELATED PRODUCTS
+    |--------------------------------------------------------------------------
+    */
+    public function related($slug)
     {
-        $product = Product::where('name', $product_name)->first();
+        $product = Product::where('slug', $slug)->first();
+
         if (!$product) {
-            return response()->json([], 200);
+            return response()->json([]);
         }
+
         $related = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->with(['productImages', 'category', 'brand'])
+            ->limit(6)
             ->get();
+
         return response()->json($related);
     }
 }

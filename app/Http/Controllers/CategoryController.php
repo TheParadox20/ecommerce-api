@@ -18,7 +18,7 @@ class CategoryController extends Controller
             'name' => 'required|string',
             'parent_id' => 'nullable|exists:categories,id',
         ]);
-        // if category name exists, return it's id
+        // if category name exists, return its id
         $category = Category::where('name', $validated['name'])->first();
         if($category){
             return response()->json(['success'=>true, 'id'=>$category->id], 200);
