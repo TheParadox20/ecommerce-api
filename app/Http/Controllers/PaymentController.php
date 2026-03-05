@@ -88,4 +88,47 @@ class PaymentController extends Controller
             ]));
         }
     }
+    public function mpesaCallback(Request $request)
+    {
+        $payload = $request->all();
+        logger('M-Pesa Callback received:', $payload);
+
+        try {
+            $body = $payload['Body']['stkCallback'] ?? null;
+
+            if (!$body) {
+                return response()->json(['status' => 'error', 'message' => 'Invalid callback payload'], 400);
+            }
+
+            $resultCode    = $body['ResultCode'];
+            $resultDesc    = $body['ResultDesc'];
+            $checkoutRequestId = $body['CheckoutRequestID'] ?? null;
+
+            if ($resultCode == 0) {
+                // Payment successful
+                $items = collect($body['CallbackMetadata']['Item']);
+                $mpesaCode = $items->firstWhere('Name', 'MpesaReceiptNumber')['Value'] ?? null;
+                $amount    = $items->firstWhere('Name', 'Amount')['Value'] ?? null;
+                $phone     = $items->firstWhere('Name', 'PhoneNumber')['Value'] ?? null;
+
+                logger("Payment SUCCESS | Receipt: $mpesaCode | Amount: $amount | Phone: $phone");
+
+                // TODO: Match by CheckoutRequestID and update order payment_status to 'paid'
+                // Example:
+                // Order::where('mpesa_checkout_id', $checkoutRequestId)
+                //     ->update(['payment_status' => 'paid', 'mpesa_code' => $mpesaCode]);
+
+            } else {
+                logger("Payment FAILED | Code: $resultCode | Desc: $resultDesc");
+
+                // TODO: Update order payment_status to 'failed'
+            }
+
+            return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
+        } catch (\Exception $e) {
+            logger('Callback error: ' . $e->getMessage());
+            return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
+        }
+    }
 }
+

@@ -63,3 +63,4 @@ Route::get('/logistics', [LogisticsController::class, 'index']);
 Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
 //payment related routes
 Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK']);
+Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);

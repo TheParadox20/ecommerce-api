@@ -32,7 +32,7 @@ class OrderController extends Controller
             'sales.*.quantity' => 'required|integer',
             'sales.*.price' => 'required|numeric',
             'order_details' => 'required|array',
-            'order_details.full_name' => 'required|string',
+            'order_details.full_name' => 'nullable|string',
             'order_details.phone' => 'required|string',
             'order_details.address' => 'nullable|string',
             'order_details.notes' => 'nullable|string',
@@ -44,7 +44,7 @@ class OrderController extends Controller
         ]);
         OrderDetail::create([
             'order_id' => $order->id,
-            'full_name' => $data['order_details']['full_name'],
+            'full_name' => $data['order_details']['full_name'] ?? '',
             'phone' => $data['order_details']['phone'],
             'address' => $data['order_details']['address'],
             'notes' => $data['order_details']['notes'],
