@@ -28,8 +28,10 @@ Route::apiResource('product-images', App\Http\Controllers\ProductImageController
 Route::apiResource('product-faqs', App\Http\Controllers\ProductFAQController::class);
 Route::apiResource('categories', App\Http\Controllers\CategoryController::class);
 Route::apiResource('brands', App\Http\Controllers\BrandController::class);
+Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
 Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class);
 Route::apiResource('orders', App\Http\Controllers\OrderController::class);
+Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
 Route::apiResource('cart', CartController::class);
 Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 Route::get('/related/{product_name}', [ProductController::class, 'related']);
