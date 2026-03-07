@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\Sale;
 use App\Models\OrderDetail;
+use GuzzleHttp\Client;
 
 class OrderController extends Controller
 {
@@ -57,6 +58,34 @@ class OrderController extends Controller
                 'price' => $sale['price'],
                 'total' => $sale['price'] * $sale['quantity'],
             ]);
+        }
+
+        $client = new Client();
+        $endpoint = 'https://api2.tiaraconnect.io/api/messaging/sendsms'; // set the Endpoint provided.
+        $apiKey = config('app.TIARA_KEY');
+        $from = 'TIARACONECT';
+        $message = 'New order placed on your account';
+        $to = '254721815617'; // set a valid number using format '2547********' or '2541********'
+
+        $requestData = [  
+            'to' => $to,
+            'from' => $from,
+            'message' => $message,
+        ];
+    
+        try {
+            $response = $client->post($endpoint, [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'Authorization' => 'Bearer ' . $apiKey,
+                ],
+                'json' => $requestData
+            ]);
+    
+            $responseBody = $response->getBody()->getContents();
+            logger()->info("request|msisdn: $to|response: $responseBody | url: $endpoint");
+        } catch (\Exception $e) {
+            logger()->error("{$apiKey} :: request|msisdn: $to|error: " . $e->getMessage() . " | url: $endpoint");
         }
         return response()->json([
             'success' => true,
