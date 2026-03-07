@@ -10,9 +10,15 @@ use App\Http\Controllers\LogisticsController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\AuthController;
+
+Route::post('/signup', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {return $request->user();});
+    Route::post('/user/logout', [AuthController::class, 'logout']);
+    Route::get('/user', function (Request $request) {return response()->json(['user' => $request->user()]);});
 });
 // test routes
 Route::get('/test/books', [TestController::class, 'books']);
