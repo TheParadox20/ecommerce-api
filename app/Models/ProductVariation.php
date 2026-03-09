@@ -37,4 +37,9 @@ class ProductVariation extends Model
     {
         return $this->hasMany(ProductImage::class);
     }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
+    }
 }

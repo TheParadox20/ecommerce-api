@@ -13,9 +13,21 @@ class OrderController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $query = Order::with(['orderDetail', 'sales.product']);
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('unassigned')) {
+            $query->whereNull('shipment_id');
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json($orders);
     }
 
     /**
@@ -30,6 +42,7 @@ class OrderController extends Controller
             // 'payment_reference' => 'nullable|string',
             'sales' => 'required|array',
             'sales.*.id' => 'required|exists:products,id',
+            'sales.*.variation' => 'nullable|exists:product_variations,id',
             'sales.*.quantity' => 'required|integer',
             'sales.*.price' => 'required|numeric',
             'order_details' => 'required|array',
@@ -54,6 +67,7 @@ class OrderController extends Controller
             Sale::create([
                 'order_id' => $order->id,
                 'product_id' => $sale['id'],
+                'product_variation_id' => $sale['variation'] ?? null,
                 'quantity' => $sale['quantity'],
                 'price' => $sale['price'],
                 'total' => $sale['price'] * $sale['quantity'],
@@ -107,7 +121,21 @@ class OrderController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $order = Order::findOrFail($id);
+
+        $data = $request->validate([
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
+            'status' => 'nullable|string',
+        ]);
+
+        $order->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order updated successfully',
+            'data' => $order,
+        ]);
     }
 
     /**
