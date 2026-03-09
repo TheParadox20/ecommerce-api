@@ -37,6 +37,8 @@ Route::apiResource('brands', App\Http\Controllers\BrandController::class);
 Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
 Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class);
 Route::apiResource('orders', App\Http\Controllers\OrderController::class);
+Route::apiResource('sales', App\Http\Controllers\SalesController::class);
+Route::apiResource('shipments', App\Http\Controllers\ShipmentController::class);
 Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
 Route::apiResource('cart', CartController::class);
 Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
