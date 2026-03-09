@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ProductImage;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductImageController extends Controller
 {
@@ -24,49 +26,73 @@ class ProductImageController extends Controller
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'product_variation_id' => 'nullable|exists:product_variations,id',
-            'media' => 'required',
-            'is_primary' => 'nullable|string' // Admin sends 'true' as string in FormData
+            'media' => 'sometimes',
+            'is_primary' => 'nullable|string', // Admin sends 'true' as string in FormData
+            'kept_media_ids' => 'nullable|string'
         ]);
 
         $product = Product::findOrFail($request->product_id);
         logger('ProductImage upload request', $request->all());
 
-        if (is_array($request->file('media'))) {
-            foreach ($request->file('media') as $index => $file) {
-                if($file && $file->isValid()){
-                    $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
-                    $name = str_replace(' ', '_', $file->getClientOriginalName());
-                    $file->move($destinationPath, $name);
-                    $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
-                    
-                    ProductImage::create([
-                        'product_id' => $product->id,
-                        'product_variation_id' => $request->product_variation_id,
-                        'url' => $url,
-                        'is_primary' => $request->is_primary === 'true' || (!isset($request->is_primary) && $index === 0)
-                    ]);
+        try {
+            DB::beginTransaction();
+            
+            if ($request->has('kept_media_ids')) {
+                $keptIds = json_decode($request->kept_media_ids, true);
+                if (is_array($keptIds)) {
+                    $obsoleteImages = ProductImage::where('product_id', $product->id)
+                        ->whereNotIn('id', $keptIds)
+                        ->get();
+                        
+                    foreach($obsoleteImages as $img) {
+                        try {
+                            $path_parts = explode('storage/products/', $img->url);
+                            if (count($path_parts) > 1) {
+                                $relativePath = 'storage/products/' . $path_parts[1];
+                                $absolutePath = public_path($relativePath);
+                                if (file_exists($absolutePath)) {
+                                    unlink($absolutePath);
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Failed to unlink image: ' . $e->getMessage());
+                        }
+                        $img->delete();
+                    }
                 }
             }
-            return response()->json(['success' => true], 201);
-        } else {
-            $file = $request->file("media");
-            if (!$file || !$file->isValid()) {
-                return response()->json(['success' => false, 'message' => 'Invalid file upload'], 400);
+
+            $imagesResponse = [];
+
+            if ($request->hasFile('media')) {
+                $mediaFiles = is_array($request->file('media')) ? $request->file('media') : [$request->file('media')];
+                
+                foreach ($mediaFiles as $index => $file) {
+                    if($file && $file->isValid()){
+                        $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
+                        $name = str_replace(' ', '_', $file->getClientOriginalName());
+                        $uniqueName = time() . '_' . substr($name, -150); // prevent too long names
+                        $file->move($destinationPath, $uniqueName);
+                        $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $uniqueName);
+                        
+                        $image = ProductImage::create([
+                            'product_id' => $product->id,
+                            'product_variation_id' => $request->product_variation_id,
+                            'url' => $url,
+                            'is_primary' => $request->is_primary === 'true' || (!isset($request->is_primary) && $index === 0 && count($imagesResponse) === 0)
+                        ]);
+                        $imagesResponse[] = $image;
+                    }
+                }
             }
-
-            $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
-            $name = str_replace(' ', '_', $file->getClientOriginalName());
-            $file->move($destinationPath, $name);
-            $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
-
-            $image = ProductImage::create([
-                'product_id' => $product->id,
-                'product_variation_id' => $request->product_variation_id,
-                'url' => $url,
-                'is_primary' => $request->is_primary === 'true'
-            ]);
-
-            return response()->json($image->load(['product', 'productVariation']), 201);
+            
+            DB::commit();
+            return response()->json(['success' => true, 'images' => $imagesResponse], 201);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('ProductImage upload failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Upload failed', 'error' => $e->getMessage()], 500);
         }
     }
 

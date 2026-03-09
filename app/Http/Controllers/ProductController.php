@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -90,63 +92,81 @@ class ProductController extends Controller
             'stock' => 'nullable|integer|min:0',
         ]);
 
-        if (isset($validated['category'])) {
-            $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
-            $validated['category_id'] = $category->id;
-            unset($validated['category']);
-        }
+        try {
+            DB::beginTransaction();
 
-        if (!empty($validated['brand'])) {
-            $brand = \App\Models\Brand::firstOrCreate([
-                'name' => $validated['brand'],
-                'category_id' => $validated['category_id'] ?? null
-            ]);
-            $validated['brand_id'] = $brand->id;
-            unset($validated['brand']);
-        }
+            if (isset($validated['category'])) {
+                $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
+                $validated['category_id'] = $category->id;
+                unset($validated['category']);
+            }
 
-        // Generate slug automatically
-        $validated['slug'] = Str::slug($validated['name']);
+            if (!empty($validated['brand'])) {
+                $brand = \App\Models\Brand::firstOrCreate([
+                    'name' => $validated['brand'],
+                    'category_id' => $validated['category_id'] ?? null
+                ]);
+                $validated['brand_id'] = $brand->id;
+                unset($validated['brand']);
+            }
 
-        $product = Product::create($validated);
+            // Generate slug automatically
+            $validated['slug'] = Str::slug($validated['name']);
 
-        if ($request->has('faqs') && is_array($request->input('faqs'))) {
-            foreach ($request->input('faqs') as $faq) {
-                if (isset($faq['question']) && isset($faq['answer'])) {
-                    $product->faqs()->create([
-                        'question' => $faq['question'],
-                        'answer' => $faq['answer'],
-                    ]);
+            $product = Product::create($validated);
+
+            if ($request->has('faqs') && is_array($request->input('faqs'))) {
+                foreach ($request->input('faqs') as $faq) {
+                    if (isset($faq['question']) && isset($faq['answer'])) {
+                        $product->faqs()->create([
+                            'question' => $faq['question'],
+                            'answer' => $faq['answer'],
+                        ]);
+                    }
                 }
             }
-        }
 
-        if ($request->has('attributes') && is_array($request->input('attributes'))) {
-            foreach ($request->input('attributes') as $attributeName => $values) {
-                if (is_array($values)) {
-                    foreach ($values as $attributeValue => $details) {
-                        if (is_array($details)) {
-                            \App\Models\ProductVariation::create([
-                                'product_id' => $product->id,
-                                'attribute_name' => $attributeName,
-                                'attribute_value' => $attributeValue,
-                                'sku' => strtoupper(\Illuminate\Support\Str::slug($product->name . '-' . $attributeValue)),
-                                'price' => $details['price'] ?? $product->price ?? 0,
-                                'stock' => $details['stock'] ?? 0,
-                                'discount' => $details['discount'] ?? null,
-                                'status' => 'active',
-                            ]);
+            if ($request->has('attributes') && is_array($request->input('attributes'))) {
+                foreach ($request->input('attributes') as $attributeName => $values) {
+                    if (is_array($values)) {
+                        foreach ($values as $attributeValue => $details) {
+                            if (is_array($details)) {
+                                \App\Models\ProductVariation::create([
+                                    'product_id' => $product->id,
+                                    'attribute_name' => $attributeName,
+                                    'attribute_value' => $attributeValue,
+                                    'sku' => strtoupper(\Illuminate\Support\Str::slug($product->name . '-' . $attributeValue)),
+                                    'price' => $details['price'] ?? $product->price ?? 0,
+                                    'stock' => $details['stock'] ?? 0,
+                                    'discount' => $details['discount'] ?? null,
+                                    'status' => 'active',
+                                ]);
+                            }
                         }
                     }
                 }
             }
-        }
 
-        return response()->json([
-            'success' => true,
-            'id' => $product->id,
-            'product' => $product->load(['faqs', 'productVariations'])
-        ], 201);
+            DB::commit();
+
+            // load few relationships for the response
+            return response()->json([
+                'success' => true,
+                'id' => $product->id,
+                'product' => [
+                    'id' => $product->id,
+                    'slug' => $product->slug,
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Product creation failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create product.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /*
@@ -189,36 +209,100 @@ class ProductController extends Controller
             'stock' => 'nullable|integer|min:0',
         ]);
 
-        if (isset($validated['category'])) {
-            $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
-            $validated['category_id'] = $category->id;
-            unset($validated['category']);
-        }
-        
-        if (isset($validated['brand'])) {
-            $brand = \App\Models\Brand::firstOrCreate([
-                'name' => $validated['brand'],
-                'category_id' => $validated['category_id'] ?? null
+        try {
+            DB::beginTransaction();
+
+            if (isset($validated['category'])) {
+                $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
+                $validated['category_id'] = $category->id;
+                unset($validated['category']);
+            }
+            
+            if (isset($validated['brand'])) {
+                $brand = \App\Models\Brand::firstOrCreate([
+                    'name' => $validated['brand'],
+                    'category_id' => $validated['category_id'] ?? null
+                ]);
+                $validated['brand_id'] = $brand->id;
+                unset($validated['brand']);
+            }
+
+            if (isset($validated['name'])) {
+                $validated['slug'] = Str::slug($validated['name']);
+            }
+
+            $product->update($validated);
+
+            // Sync FAQs
+            if ($request->has('faqs') && is_array($request->input('faqs'))) {
+                $product->faqs()->delete();
+                foreach ($request->input('faqs') as $faq) {
+                    if (isset($faq['question']) && isset($faq['answer'])) {
+                        $product->faqs()->create([
+                            'question' => $faq['question'],
+                            'answer' => $faq['answer'],
+                        ]);
+                    }
+                }
+            }
+
+            // Sync Attributes/Variations
+            if ($request->has('attributes') && is_array($request->input('attributes'))) {
+                $existingSkus = [];
+                foreach ($request->input('attributes') as $attributeName => $values) {
+                    if (is_array($values)) {
+                        foreach ($values as $attributeValue => $details) {
+                            if (is_array($details)) {
+                                $sku = strtoupper(\Illuminate\Support\Str::slug($product->name . '-' . $attributeValue));
+                                $existingSkus[] = $sku;
+                                \App\Models\ProductVariation::updateOrCreate(
+                                    [
+                                        'product_id' => $product->id,
+                                        'sku' => $sku
+                                    ],
+                                    [
+                                        'attribute_name' => $attributeName,
+                                        'attribute_value' => $attributeValue,
+                                        'price' => $details['price'] ?? $product->price ?? 0,
+                                        'stock' => $details['stock'] ?? 0,
+                                        'discount' => $details['discount'] ?? null,
+                                        'status' => 'active',
+                                    ]
+                                );
+                            }
+                        }
+                    }
+                }
+                
+                // Delete variations that are no longer present
+                if (!empty($existingSkus)) {
+                    \App\Models\ProductVariation::where('product_id', $product->id)
+                                                ->whereNotIn('sku', $existingSkus)
+                                                ->delete();
+                } else if ($request->has('attributes') && empty($request->input('attributes'))) {
+                    // Empty attributes passed, clear all
+                    \App\Models\ProductVariation::where('product_id', $product->id)->delete();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'product' => [
+                    'id' => $product->id,
+                    'slug' => $product->slug
+                ]
             ]);
-            $validated['brand_id'] = $brand->id;
-            unset($validated['brand']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Product update failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update product.',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        if (isset($validated['name'])) {
-            $validated['slug'] = Str::slug($validated['name']);
-        }
-
-        $product->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'product' => $product->load([
-                'productVariations.attributeValues.attribute',
-                'productImages',
-                'category',
-                'brand'
-            ])
-        ]);
     }
 
     /*
