@@ -174,7 +174,7 @@ class ProductController extends Controller
     | SHOW SINGLE PRODUCT (BY SLUG)
     |--------------------------------------------------------------------------
     */
-    public function show($slug)
+    public function show($identifier)
     {
         $product = Product::with([
             'productVariations.attributeValues.attribute',
@@ -182,8 +182,11 @@ class ProductController extends Controller
             'category',
             'brand',
             'faqs',
+            'description',
             'reviews'
-        ])->where('slug', $slug)->firstOrFail();
+        ])->where('slug', $identifier)
+          ->orWhere('id', $identifier)
+          ->firstOrFail();
 
         return response()->json($product);
     }
