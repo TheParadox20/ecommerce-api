@@ -75,3 +75,8 @@ Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
 Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class, 'calculate']);
 Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK']);
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
+//system maintenance routes
+Route::get('/run-migrations', function () {
+    Artisan::call('migrate', ['--force' => true]);
+    return Artisan::output();
+});
