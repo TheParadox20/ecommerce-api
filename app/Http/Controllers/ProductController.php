@@ -185,6 +185,7 @@ class ProductController extends Controller
             'description',
             'reviews'
         ])->where('slug', $identifier)
+          ->orWhere('name', $identifier)
           ->orWhere('id', $identifier)
           ->firstOrFail();
 

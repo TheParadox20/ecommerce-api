@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
@@ -14,6 +15,7 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
+        'slug',
         'total',
         'payment_method',
         'payment_status',
@@ -24,6 +26,18 @@ class Order extends Model
         'sales',
         'order_details',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order) {
+            $order->slug = $order->slug ?: Str::uuid()->toString();
+        });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     public function sales(): HasMany
     {

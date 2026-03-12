@@ -50,11 +50,15 @@ class OrderController extends Controller
             'order_details.phone' => 'required|string',
             'order_details.address' => 'nullable|string',
             'order_details.notes' => 'nullable|string',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
         $order = Order::create([
             // 'user_id' => $data['user_id'],
             'total' => $data['total'],
             'payment_method' => $data['payment_method'],
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
         ]);
         OrderDetail::create([
             'order_id' => $order->id,
@@ -78,8 +82,8 @@ class OrderController extends Controller
         $endpoint = 'https://api2.tiaraconnect.io/api/messaging/sendsms'; // set the Endpoint provided.
         $apiKey = config('app.TIARA_KEY');
         $from = 'TIARACONECT';
-        $message = 'New order placed on your account';
-        $to = '254721815617'; // set a valid number using format '2547********' or '2541********'
+        $message = $order->slug . ' - New order placed. Total: ' . $order->total . ' KES. Please check the admin panel for details.';
+        $to = '254791210705, 254701259936'; // set a valid number using format '2547********' or '2541********'
 
         $requestData = [  
             'to' => $to,
