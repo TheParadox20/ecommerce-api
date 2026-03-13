@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Events\NewOrderPlaced;
 use App\Models\Order;
 use App\Models\Sale;
 use App\Models\OrderDetail;
-use GuzzleHttp\Client;
 
 class OrderController extends Controller
 {
@@ -78,33 +78,8 @@ class OrderController extends Controller
             ]);
         }
 
-        $client = new Client();
-        $endpoint = 'https://api2.tiaraconnect.io/api/messaging/sendsms'; // set the Endpoint provided.
-        $apiKey = config('app.TIARA_KEY');
-        $from = 'TIARACONECT';
-        $message = $order->slug . ' - New order placed. Total: ' . $order->total . ' KES. Please check the admin panel for details.';
-        $to = '254791210705, 254701259936'; // set a valid number using format '2547********' or '2541********'
+        NewOrderPlaced::dispatch($order);
 
-        $requestData = [  
-            'to' => $to,
-            'from' => $from,
-            'message' => $message,
-        ];
-    
-        try {
-            $response = $client->post($endpoint, [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . $apiKey,
-                ],
-                'json' => $requestData
-            ]);
-    
-            $responseBody = $response->getBody()->getContents();
-            logger()->info("request|msisdn: $to|response: $responseBody | url: $endpoint");
-        } catch (\Exception $e) {
-            logger()->error("{$apiKey} :: request|msisdn: $to|error: " . $e->getMessage() . " | url: $endpoint");
-        }
         return response()->json([
             'success' => true,
             'message' => 'Order created successfully',

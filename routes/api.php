@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TestController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\MessagesController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\LogisticsController;
 use App\Http\Controllers\PaymentController;
@@ -65,7 +66,7 @@ Route::post('/recipes', [RecipeController::class, 'store']);
 Route::put('/recipes/{id}', [RecipeController::class, 'update']);
 Route::delete('/recipes/{id}', [RecipeController::class, 'destroy']);
 //misc....
-Route::post('/contact', [MessageController::class, 'contact']);
+Route::apiResource('messages', MessagesController::class);
 Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
 // admin related routes
@@ -78,5 +79,11 @@ Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback'])
 //system maintenance routes
 Route::get('/run-migrations', function () {
     Artisan::call('migrate', ['--force' => true]);
+    return Artisan::output();
+});
+
+Route::get('/run-seeder', function (Request $request) {
+    $class = $request->query('class', 'DatabaseSeeder');
+    Artisan::call('db:seed', ['--class' => $class, '--force' => true]);
     return Artisan::output();
 });
