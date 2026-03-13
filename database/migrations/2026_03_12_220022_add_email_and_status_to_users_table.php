@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('orders', 'slug')) {
-            Schema::table('orders', function (Blueprint $table) {
-                $table->string('slug')->nullable()->unique()->after('id');
-            });
-        }
+        Schema::table('users', function (Blueprint $table) {
+            $table->string('email')->nullable()->unique()->after('phone');
+            $table->string('status')->default('active')->after('password'); // active, inactive
+        });
     }
 
     /**
@@ -23,8 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn('slug');
+        Schema::table('users', function (Blueprint $table) {
+            //
         });
     }
 };

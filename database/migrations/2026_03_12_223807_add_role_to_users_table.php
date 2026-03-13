@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasColumn('orders', 'slug')) {
-            Schema::table('orders', function (Blueprint $table) {
-                $table->string('slug')->nullable()->unique()->after('id');
-            });
-        }
+        Schema::table('users', function (Blueprint $table) {
+            $table->enum('role', ['user', 'admin', 'super_admin'])->default('user')->after('password');
+        });
     }
 
     /**
@@ -23,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn('slug');
+        Schema::table('users', function (Blueprint $table) {
+            //
         });
     }
 };

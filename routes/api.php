@@ -11,14 +11,23 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminAuthController;
+use App\Http\Controllers\AdminManagementController;
+use App\Http\Controllers\UserManagementController;
 
 Route::post('/signup', [AuthController::class, 'register']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/user/logout', [AuthController::class, 'logout']);
+    Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', function (Request $request) {return response()->json(['user' => $request->user()]);});
+});
+Route::get('/menu', function () {
+    return response()->json([
+        'success' => true,
+        'menu' => []
+    ]);
 });
 // test routes
 Route::get('/test/books', [TestController::class, 'books']);
@@ -39,7 +48,6 @@ Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::c
 Route::apiResource('orders', App\Http\Controllers\OrderController::class);
 Route::apiResource('sales', App\Http\Controllers\SalesController::class);
 Route::apiResource('shipments', App\Http\Controllers\ShipmentController::class);
-Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
 Route::apiResource('cart', CartController::class);
 Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 Route::get('/related/{product_name}', [ProductController::class, 'related']);
@@ -68,7 +76,17 @@ Route::delete('/recipes/{id}', [RecipeController::class, 'destroy']);
 Route::post('/contact', [MessageController::class, 'contact']);
 Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
-// admin related routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Admin & User management (restricted to admins in controller logic)
+    Route::get('/admins', [AdminManagementController::class, 'index']);
+    Route::get('/admin/admins', [AdminManagementController::class, 'index']);
+    Route::post('/admins', [AdminManagementController::class, 'store']);
+    
+    Route::get('/admin/users', [UserManagementController::class, 'index']);
+    Route::post('/admin/users/{id}/deactivate', [UserManagementController::class, 'deactivate']);
+    Route::post('/admin/users/{id}/reactivate', [UserManagementController::class, 'reactivate']);
+});
+
 Route::get('/logistics', [LogisticsController::class, 'index']);
 Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
 //payment related routes

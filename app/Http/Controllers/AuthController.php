@@ -29,10 +29,14 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Account created successfully',
-            'auth_token' => $token,
-            'user' => $user,
-            'name' => $user->name,
-            'phone' => $user->phone,
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
             'balance' => 0,
         ], 201);
     }
@@ -45,9 +49,10 @@ class AuthController extends Controller
         ]);
 
         if (!Auth::attempt(['phone' => $request->phone, 'password' => $request->password])) {
-            throw ValidationException::withMessages([
-                'phone' => ['The provided credentials are incorrect.'],
-            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'The provided credentials are incorrect.'
+            ], 401);
         }
 
         $user = User::where('phone', $request->phone)->firstOrFail();
@@ -57,8 +62,14 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
-            'auth_token' => $token,
-            'user' => $user
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone,
+                'email' => $user->email,
+                'role' => $user->role,
+            ]
         ]);
     }
 
