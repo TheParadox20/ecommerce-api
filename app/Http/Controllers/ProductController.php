@@ -38,6 +38,11 @@ class ProductController extends Controller
             });
         }
 
+        // 🔎 Exclude a product by name (useful for "related products")
+        if ($request->filled('exclude')) {
+            $products->where('name', '!=', $request->exclude);
+        }
+
         // 🔎 Search by name
         if ($request->filled('search')) {
             $products->where('name', 'like', '%' . $request->search . '%');

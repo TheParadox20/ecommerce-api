@@ -43,7 +43,6 @@ Route::apiResource('shipments', App\Http\Controllers\ShipmentController::class);
 Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
 Route::apiResource('cart', CartController::class);
 Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
-Route::get('/related/{product_name}', [ProductController::class, 'related']);
 
 // Optionally, comment out or remove old product-related routes for clarity
 // Route::get('/home', [ProductsController::class, 'index']);
