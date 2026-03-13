@@ -12,7 +12,7 @@
                     <!-- Header -->
                     <tr>
                         <td style="background: linear-gradient(135deg, #6D31ED 0%, #15ABFF 100%); padding: 32px 40px; text-align: center;">
-                            <img src="{{ asset('logo.png') }}" alt="NG Windsong Kenya" width="120" style="display: block; margin: 0 auto 12px;">
+                            <img src="{{ config('app.url') }}/logo.png" alt="NG Windsong Kenya" width="120" style="display: block; margin: 0 auto 12px;">
                             <h1 style="color: #ffffff; font-size: 22px; font-weight: 600; margin: 0;">New Contact Message</h1>
                         </td>
                     </tr>

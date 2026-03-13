@@ -12,7 +12,7 @@
                     <!-- Header -->
                     <tr>
                         <td style="background: linear-gradient(135deg, #6D31ED 0%, #15ABFF 100%); padding: 40px 40px 32px; text-align: center;">
-                            <img src="{{ asset('logo.png') }}" alt="NG Windsong Kenya" width="120" style="display: block; margin: 0 auto 16px;">
+                            <img src="{{ config('app.url') }}/logo.png" alt="NG Windsong Kenya" width="120" style="display: block; margin: 0 auto 16px;">
                             <h1 style="color: #ffffff; font-size: 24px; font-weight: 600; margin: 0;">Thank You, {{ $contactMessage->first_name }}!</h1>
                             <p style="color: rgba(255,255,255,0.85); font-size: 14px; margin: 8px 0 0;">We've received your message</p>
                         </td>

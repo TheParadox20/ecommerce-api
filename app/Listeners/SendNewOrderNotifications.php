@@ -29,24 +29,30 @@ class SendNewOrderNotifications
             $apiKey = config('app.TIARA_KEY');
             $from = 'TIARACONECT';
             $message = $order->slug . ' - New order placed. Total: ' . $order->total . ' KES. Please check the admin panel for details.';
-            $to = '254791210705, 254701259936';
+            $recipients = ['254791210705', '254701259936', '254113748906'];
 
-            $response = $client->post($endpoint, [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . $apiKey,
-                ],
-                'json' => [
-                    'to' => $to,
-                    'from' => $from,
-                    'message' => $message,
-                ],
-            ]);
+            foreach ($recipients as $to) {
+                try {
+                    $response = $client->post($endpoint, [
+                        'headers' => [
+                            'Content-Type' => 'application/json',
+                            'Authorization' => 'Bearer ' . $apiKey,
+                        ],
+                        'json' => [
+                            'to' => $to,
+                            'from' => $from,
+                            'message' => $message,
+                        ],
+                    ]);
 
-            $responseBody = $response->getBody()->getContents();
-            Log::info("request|msisdn: $to|response: $responseBody | url: $endpoint");
+                    $responseBody = $response->getBody()->getContents();
+                    Log::info("request|msisdn: $to|response: $responseBody | url: $endpoint");
+                } catch (\Exception $e) {
+                    Log::error("SMS failed|msisdn: $to|error: " . $e->getMessage());
+                }
+            }
         } catch (\Exception $e) {
-            Log::error("SMS failed|msisdn: $to|error: " . $e->getMessage());
+            Log::error("SMS setup failed: " . $e->getMessage());
         }
     }
 }
