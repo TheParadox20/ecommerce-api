@@ -11,14 +11,17 @@ class Recipe extends Model
 
     protected $fillable = [
         'title',
-        'content',
+        'slug',
+        'content', // Used as description
         'image',
+        'video_url',
         'ingredients',
-        'instructions',
+        'instructions', // Used as steps
         'cooking_time',
         'servings',
         'difficulty',
         'category',
+        'status',
         'is_featured',
         'views'
     ];
@@ -27,7 +30,13 @@ class Recipe extends Model
         'is_featured' => 'boolean',
         'ingredients' => 'array',
         'instructions' => 'array',
+        'status' => 'string',
     ];
+
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'product_recipe');
+    }
 
     public function getFormattedCookingTimeAttribute()
     {

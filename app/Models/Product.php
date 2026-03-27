@@ -46,6 +46,11 @@ class Product extends Model
         return $this->hasMany(ProductImage::class);
     }
 
+    public function recipes()
+    {
+        return $this->belongsToMany(Recipe::class, 'product_recipe');
+    }
+
     public function faqs(): HasMany
     {
         return $this->hasMany(ProductFAQ::class);

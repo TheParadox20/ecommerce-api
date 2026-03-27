@@ -13,10 +13,22 @@ class RecipeController extends Controller
         try {
             $query = Recipe::query();
             
+            // Public only sees published
+            if (!$request->user() || !$request->user()->isAdmin()) {
+                $query->where('status', 'published');
+            }
+            
             // Search functionality
             if ($request->has('search') && $request->search) {
                 $query->where('title', 'like', '%' . $request->search . '%')
                       ->orWhere('content', 'like', '%' . $request->search . '%');
+            }
+            
+            // Product filter
+            if ($request->has('product') && $request->product) {
+                $query->whereHas('products', function($q) use ($request) {
+                    $q->where('products.id', $request->product);
+                });
             }
             
             // Category filter
@@ -29,12 +41,7 @@ class RecipeController extends Controller
                 $query->where('difficulty', $request->difficulty);
             }
             
-            // Featured recipes
-            if ($request->has('featured') && $request->featured) {
-                $query->featured();
-            }
-            
-            $recipes = $query->orderBy('created_at', 'desc')->paginate(12);
+            $recipes = $query->with('products')->orderBy('created_at', 'desc')->paginate(12);
             
             return response()->json([
                 'success' => true,
@@ -48,11 +55,16 @@ class RecipeController extends Controller
         }
     }
 
-    public function show(Request $request)
+    public function show($slug)
     {
         try {
-            $recipe = Recipe::where('title', str_replace('-', ' ', $request->recipe))->first();
+            $recipe = Recipe::with('products')->where('slug', $slug)->first();
             
+            if (!$recipe) {
+                // Try finding by ID as fallback for admin
+                $recipe = Recipe::with('products')->find($slug);
+            }
+
             if (!$recipe) {
                 return response()->json([
                     'success' => false,
@@ -65,69 +77,15 @@ class RecipeController extends Controller
             
             // Get related recipes
             $relatedRecipes = Recipe::where('category', $recipe->category)
-                                  ->where('id', '!=', $recipe->id)
-                                  ->limit(6)
-                                  ->get();
+                                   ->where('id', '!=', $recipe->id)
+                                   ->where('status', 'published')
+                                   ->limit(6)
+                                   ->get();
             
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'recipe' => $recipe,
-                    'related' => $relatedRecipes
-                ]
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function popular()
-    {
-        try {
-            $recipes = Recipe::popular()->limit(6)->get();
-            
-            return response()->json([
-                'success' => true,
-                'data' => $recipes
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function featured()
-    {
-        try {
-            $recipes = Recipe::featured()->limit(6)->get();
-            
-            return response()->json([
-                'success' => true,
-                'data' => $recipes
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function categories()
-    {
-        try {
-            $categories = Recipe::select('category')
-                               ->distinct()
-                               ->pluck('category');
-            
-            return response()->json([
-                'success' => true,
-                'data' => $categories
+                'recipe' => $recipe,
+                'related' => $relatedRecipes
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -140,24 +98,33 @@ class RecipeController extends Controller
     public function store(Request $request)
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'title' => 'required|string|max:255',
-                'content' => 'required|string',
-                'ingredients' => 'required|array',
-                'instructions' => 'required|array',
+                'slug' => 'required|string|unique:recipes,slug',
+                'content' => 'nullable|string',
+                'ingredients' => 'required|array|min:1',
+                'instructions' => 'required|array|min:1',
                 'cooking_time' => 'required|integer|min:1',
                 'servings' => 'required|integer|min:1',
                 'difficulty' => 'required|in:easy,medium,hard',
                 'category' => 'required|string',
-                'image' => 'nullable|string'
+                'status' => 'required|in:draft,published',
+                'image' => 'nullable|string',
+                'video_url' => 'nullable|string',
+                'product_ids' => 'nullable|array',
+                'product_ids.*' => 'exists:products,id'
             ]);
 
-            $recipe = Recipe::create($request->all());
+            $recipe = Recipe::create($validated);
+
+            if ($request->has('product_ids')) {
+                $recipe->products()->sync($request->product_ids);
+            }
             
             return response()->json([
                 'success' => true,
                 'message' => 'Recipe created successfully',
-                'data' => $recipe
+                'data' => $recipe->load('products')
             ], 201);
         } catch (Exception $e) {
             return response()->json([
@@ -172,24 +139,33 @@ class RecipeController extends Controller
         try {
             $recipe = Recipe::findOrFail($id);
             
-            $request->validate([
+            $validated = $request->validate([
                 'title' => 'sometimes|required|string|max:255',
-                'content' => 'sometimes|required|string',
-                'ingredients' => 'sometimes|required|array',
-                'instructions' => 'sometimes|required|array',
+                'slug' => 'sometimes|required|string|unique:recipes,slug,' . $id,
+                'content' => 'nullable|string',
+                'ingredients' => 'sometimes|required|array|min:1',
+                'instructions' => 'sometimes|required|array|min:1',
                 'cooking_time' => 'sometimes|required|integer|min:1',
                 'servings' => 'sometimes|required|integer|min:1',
                 'difficulty' => 'sometimes|required|in:easy,medium,hard',
                 'category' => 'sometimes|required|string',
-                'image' => 'nullable|string'
+                'status' => 'sometimes|required|in:draft,published',
+                'image' => 'nullable|string',
+                'video_url' => 'nullable|string',
+                'product_ids' => 'nullable|array',
+                'product_ids.*' => 'exists:products,id'
             ]);
 
-            $recipe->update($request->all());
+            $recipe->update($validated);
+
+            if ($request->has('product_ids')) {
+                $recipe->products()->sync($request->product_ids);
+            }
             
             return response()->json([
                 'success' => true,
                 'message' => 'Recipe updated successfully',
-                'data' => $recipe
+                'data' => $recipe->load('products')
             ]);
         } catch (Exception $e) {
             return response()->json([

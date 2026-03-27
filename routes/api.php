@@ -85,6 +85,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/users', [UserManagementController::class, 'index']);
     Route::post('/admin/users/{id}/deactivate', [UserManagementController::class, 'deactivate']);
     Route::post('/admin/users/{id}/reactivate', [UserManagementController::class, 'reactivate']);
+
+    // Admin Recipe Routes
+    Route::get('/admin/recipes', [RecipeController::class, 'index']);
+    Route::post('/admin/recipes', [RecipeController::class, 'store']);
+    Route::put('/admin/recipes/{id}', [RecipeController::class, 'update']);
+    Route::delete('/admin/recipes/{id}', [RecipeController::class, 'destroy']);
+    Route::get('/admin/recipes/{id}', [RecipeController::class, 'show']);
 });
 
 Route::get('/logistics', [LogisticsController::class, 'index']);
