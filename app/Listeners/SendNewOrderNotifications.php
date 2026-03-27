@@ -29,7 +29,7 @@ class SendNewOrderNotifications
             $apiKey = config('app.TIARA_KEY');
             $from = 'TIARACONECT';
             $message = $order->slug . ' - New order placed. Total: ' . $order->total . ' KES. Please check the admin panel for details.';
-            $recipients = ['254791210705', '254701259936', '254113748906'];
+            $recipients = ['254791210705', '254718156421', '254113748906'];
 
             foreach ($recipients as $to) {
                 try {
