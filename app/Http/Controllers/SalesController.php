@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Carbon\Carbon;
 use App\Models\Order;
 
 class SalesController extends Controller
@@ -12,25 +15,19 @@ class SalesController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Order::with(['sales.product.productImages', 'sales.productVariation', 'orderDetail']);
+        $query = Order::query()
+            ->with([
+                'sales' => function ($query) use ($request) {
+                    $this->applySaleFilters($query, $request);
+                    $query->with(['product.productImages', 'productVariation']);
+                },
+                'orderDetail',
+                'shipment',
+            ]);
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('id', $search)
-                  ->orWhere('payment_reference', 'like', "%{$search}%")
-                  ->orWhereHas('orderDetail', function ($q) use ($search) {
-                      $q->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                  });
-            });
-        }
-
+        $this->applyOrderFilters($query, $request);
         $sort = $request->get('sort', 'newest');
+
         switch ($sort) {
             case 'oldest':
                 $query->orderBy('created_at', 'asc');
@@ -62,10 +59,21 @@ class SalesController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $order = Order::with(['sales.product.productImages', 'sales.productVariation', 'orderDetail'])
-            ->findOrFail($id);
+        $query = Order::query()
+            ->with([
+                'sales' => function ($query) use ($request) {
+                    $this->applySaleFilters($query, $request);
+                    $query->with(['product.productImages', 'productVariation']);
+                },
+                'orderDetail',
+                'shipment',
+            ]);
+
+        $this->applyOrderFilters($query, $request);
+
+        $order = $this->findOrder($query, $id);
 
         return response()->json($order);
     }
@@ -84,5 +92,109 @@ class SalesController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    private function applyOrderFilters(Builder|Relation $query, Request $request): void
+    {
+        if ($request->filled('id')) {
+            $query->whereKey($request->id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
+        }
+
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('shipment_id')) {
+            $query->where('shipment_id', $request->shipment_id);
+        }
+
+        if ($request->boolean('unassigned')) {
+            $query->whereNull('shipment_id');
+        }
+
+        if ($request->has('has_coordinates')) {
+            $request->boolean('has_coordinates')
+                ? $query->whereNotNull('latitude')->whereNotNull('longitude')
+                : $query->where(function ($query) {
+                    $query->whereNull('latitude')->orWhereNull('longitude');
+                });
+        }
+
+        if ($request->filled('min_total')) {
+            $query->where('total', '>=', $request->min_total);
+        }
+
+        if ($request->filled('max_total')) {
+            $query->where('total', '<=', $request->max_total);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->where('created_at', '>=', Carbon::parse($request->date_from)->startOfDay());
+        }
+
+        if ($request->filled('date_to')) {
+            $query->where('created_at', '<=', Carbon::parse($request->date_to)->endOfDay());
+        }
+
+        if ($request->filled('shipment_status')) {
+            $query->whereHas('shipment', function ($shipmentQuery) use ($request) {
+                $shipmentQuery->where('status', $request->shipment_status);
+            });
+        }
+
+        if ($request->filled('product_id') || $request->filled('product_variation_id')) {
+            $query->whereHas('sales', function ($salesQuery) use ($request) {
+                $this->applySaleFilters($salesQuery, $request);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($query) use ($search) {
+                $query->where('id', $search)
+                    ->orWhere('payment_reference', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhereHas('orderDetail', function ($detailQuery) use ($search) {
+                        $detailQuery->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
+                            ->orWhere('address', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('sales.product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+    }
+
+    private function applySaleFilters(Builder|Relation $query, Request $request): void
+    {
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->product_id);
+        }
+
+        if ($request->filled('product_variation_id')) {
+            $query->where('product_variation_id', $request->product_variation_id);
+        }
+    }
+
+    private function findOrder(Builder $query, string $id): Order
+    {
+        if (is_numeric($id)) {
+            return $query->whereKey($id)->firstOrFail();
+        }
+
+        return $query->where('slug', $id)->firstOrFail();
     }
 }
