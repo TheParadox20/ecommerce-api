@@ -76,7 +76,10 @@ Route::delete('/recipes/{id}', [RecipeController::class, 'destroy']);
 Route::apiResource('messages', MessagesController::class);
 Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
-Route::get('/admins', [AdminManagementController::class, 'index']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    // Admin & User management (restricted to admins in controller logic)
+    Route::get('/admins', [AdminManagementController::class, 'index']);
     Route::get('/admin/admins', [AdminManagementController::class, 'index']);
     Route::post('/admins', [AdminManagementController::class, 'store']);
     
@@ -90,9 +93,6 @@ Route::get('/admins', [AdminManagementController::class, 'index']);
     Route::put('/admin/recipes/{id}', [RecipeController::class, 'update']);
     Route::delete('/admin/recipes/{id}', [RecipeController::class, 'destroy']);
     Route::get('/admin/recipes/{id}', [RecipeController::class, 'show']);
-Route::middleware('auth:sanctum')->group(function () {
-    // Admin & User management (restricted to admins in controller logic)
-    
 });
 
 Route::get('/logistics', [LogisticsController::class, 'index']);
