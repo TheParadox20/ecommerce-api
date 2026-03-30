@@ -30,7 +30,7 @@ class Order extends Model
     protected static function booted(): void
     {
         static::creating(function (Order $order) {
-            $order->slug = $order->slug ?: Str::uuid()->toString();
+            $order->slug = $order->slug ?: Str::random(5);
         });
     }
 
