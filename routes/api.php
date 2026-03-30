@@ -15,6 +15,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminManagementController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\BlogCommentController;
 
 Route::post('/signup', [AuthController::class, 'register']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -72,6 +74,11 @@ Route::get('/recipes/categories', [RecipeController::class, 'categories']);
 Route::post('/recipes', [RecipeController::class, 'store']);
 Route::put('/recipes/{id}', [RecipeController::class, 'update']);
 Route::delete('/recipes/{id}', [RecipeController::class, 'destroy']);
+
+// Blog Public Routes
+Route::get('/blogs', [BlogController::class, 'index']);
+Route::get('/blogs/{slug}', [BlogController::class, 'show']);
+Route::post('/blogs/{id}/comments', [BlogController::class, 'storeComment'])->middleware('auth:sanctum');
 //misc....
 Route::apiResource('messages', MessagesController::class);
 Route::post('/ask', [MessageController::class, 'ask']);
@@ -92,6 +99,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/admin/recipes/{id}', [RecipeController::class, 'update']);
     Route::delete('/admin/recipes/{id}', [RecipeController::class, 'destroy']);
     Route::get('/admin/recipes/{id}', [RecipeController::class, 'show']);
+
+    // Admin Blog Routes
+    Route::get('/admin/blogs', [BlogController::class, 'adminIndex']);
+    Route::post('/admin/blogs', [BlogController::class, 'store']);
+    Route::put('/admin/blogs/{id}', [BlogController::class, 'update']);
+    Route::delete('/admin/blogs/{id}', [BlogController::class, 'destroy']);
+
+    // Admin Comment Moderation
+    Route::get('/admin/comments', [BlogCommentController::class, 'index']);
+    Route::put('/admin/comments/{id}/approve', [BlogCommentController::class, 'approve']);
+    Route::delete('/admin/comments/{id}', [BlogCommentController::class, 'destroy']);
 });
 
 Route::get('/logistics', [LogisticsController::class, 'index']);
