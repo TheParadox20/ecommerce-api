@@ -23,6 +23,7 @@ class Order extends Model
         'latitude',
         'longitude',
         'shipment_id',
+        'status',
         'sales',
         'order_details',
     ];
