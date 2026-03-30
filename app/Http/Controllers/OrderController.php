@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Carbon\Carbon;
 use App\Events\NewOrderPlaced;
 use App\Models\Order;
 use App\Models\Sale;
 use App\Models\OrderDetail;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class OrderController extends Controller
 {
@@ -15,17 +19,37 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Order::with(['orderDetail', 'sales.product']);
+        $query = Order::query()
+            ->with([
+                'orderDetail',
+                'shipment',
+                'sales' => function ($query) use ($request) {
+                    $this->applySaleFilters($query, $request);
+                    $query->with(['product.productImages', 'productVariation']);
+                },
+            ]);
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        $this->applyOrderFilters($query, $request);
+
+        $sort = $request->get('sort', 'newest');
+        switch ($sort) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'total_asc':
+                $query->orderBy('total', 'asc');
+                break;
+            case 'total_desc':
+                $query->orderBy('total', 'desc');
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
         }
 
-        if ($request->has('unassigned')) {
-            $query->whereNull('shipment_id');
-        }
-
-        $orders = $query->orderBy('created_at', 'desc')->get();
+        $orders = $request->filled('per_page')
+            ? $query->paginate((int) $request->get('per_page', 20))
+            : $query->get();
 
         return response()->json($orders);
     }
@@ -53,8 +77,19 @@ class OrderController extends Controller
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
+
+        $token = $request->bearerToken();
+        if ($token) {
+            $accessToken = PersonalAccessToken::findToken($token);
+            $user = $accessToken?->tokenable;
+
+            if ($user) {
+                $data['user_id'] = $user->id;
+            }
+        }
+
         $order = Order::create([
-            // 'user_id' => $data['user_id'],
+            'user_id' => $data['user_id'] ?? null,
             'total' => $data['total'],
             'payment_method' => $data['payment_method'],
             'latitude' => $data['latitude'] ?? null,
@@ -78,7 +113,7 @@ class OrderController extends Controller
             ]);
         }
 
-        NewOrderPlaced::dispatch($order);
+        // NewOrderPlaced::dispatch($order);
 
         return response()->json([
             'success' => true,
@@ -90,9 +125,21 @@ class OrderController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        //
+        $query = Order::query()
+            ->with([
+                'orderDetail',
+                'shipment',
+                'sales' => function ($query) use ($request) {
+                    $this->applySaleFilters($query, $request);
+                    $query->with(['product.productImages', 'productVariation']);
+                },
+            ]);
+
+        $this->applyOrderFilters($query, $request);
+
+        return response()->json($this->findOrder($query, $id));
     }
 
     /**
@@ -123,5 +170,103 @@ class OrderController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    private function applyOrderFilters(Builder|Relation $query, Request $request): void
+    {
+        if ($request->filled('id')) {
+            $query->whereKey($request->id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('shipment_id')) {
+            $query->where('shipment_id', $request->shipment_id);
+        }
+
+        if ($request->boolean('unassigned')) {
+            $query->whereNull('shipment_id');
+        }
+
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
+        }
+
+        if ($request->filled('payment_method')) {
+            $query->where('payment_method', $request->payment_method);
+        }
+
+        if ($request->has('has_coordinates')) {
+            $request->boolean('has_coordinates')
+                ? $query->whereNotNull('latitude')->whereNotNull('longitude')
+                : $query->where(function ($query) {
+                    $query->whereNull('latitude')->orWhereNull('longitude');
+                });
+        }
+
+        if ($request->filled('min_total')) {
+            $query->where('total', '>=', $request->min_total);
+        }
+
+        if ($request->filled('max_total')) {
+            $query->where('total', '<=', $request->max_total);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->where('created_at', '>=', Carbon::parse($request->date_from)->startOfDay());
+        }
+
+        if ($request->filled('date_to')) {
+            $query->where('created_at', '<=', Carbon::parse($request->date_to)->endOfDay());
+        }
+
+        if ($request->filled('product_id') || $request->filled('product_variation_id')) {
+            $query->whereHas('sales', function ($salesQuery) use ($request) {
+                $this->applySaleFilters($salesQuery, $request);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($query) use ($search) {
+                $query->where('id', $search)
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('payment_reference', 'like', "%{$search}%")
+                    ->orWhereHas('orderDetail', function ($detailQuery) use ($search) {
+                        $detailQuery->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
+                            ->orWhere('address', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('sales.product', function ($productQuery) use ($search) {
+                        $productQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+    }
+
+    private function applySaleFilters(Builder|Relation $query, Request $request): void
+    {
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->product_id);
+        }
+
+        if ($request->filled('product_variation_id')) {
+            $query->where('product_variation_id', $request->product_variation_id);
+        }
+    }
+
+    private function findOrder(Builder $query, string $id): Order
+    {
+        if (is_numeric($id)) {
+            return $query->whereKey($id)->firstOrFail();
+        }
+
+        return $query->where('slug', $id)->firstOrFail();
     }
 }

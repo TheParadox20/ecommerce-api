@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewShipmentCreated;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Carbon\Carbon;
 use App\Models\Shipment;
 use App\Models\Order;
 
@@ -13,20 +17,33 @@ class ShipmentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Shipment::with(['orders.orderDetail', 'orders.sales'])
-            ->withCount('orders')
-            ->withSum('orders', 'total');
+        $orderRelation = function ($query) use ($request) {
+            $this->applyOrderFilters($query, $request);
+            $query->with(['orderDetail', 'sales.product.productImages', 'sales.productVariation']);
+        };
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        $query = Shipment::query()
+            ->with(['orders' => $orderRelation])
+            ->withCount(['orders as orders_count' => function ($query) use ($request) {
+                $this->applyOrderFilters($query, $request);
+            }])
+            ->withSum(['orders as orders_sum_total' => function ($query) use ($request) {
+                $this->applyOrderFilters($query, $request);
+            }], 'total');
+
+        $this->applyShipmentFilters($query, $request);
+
+        $sort = $request->get('sort', 'newest');
+        switch ($sort) {
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            default:
+                $query->orderBy('created_at', 'desc');
+                break;
         }
 
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where('id', $search);
-        }
-
-        $shipments = $query->orderBy('created_at', 'desc')->paginate(20);
+        $shipments = $query->paginate((int) $request->get('per_page', 20));
 
         return response()->json($shipments);
     }
@@ -59,6 +76,8 @@ class ShipmentController extends Controller
 
         $shipment->load(['orders.orderDetail', 'orders.sales']);
 
+        NewShipmentCreated::dispatch($shipment);
+
         return response()->json([
             'success' => true,
             'message' => 'Shipment created successfully',
@@ -69,12 +88,23 @@ class ShipmentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $shipment = Shipment::with(['orders.orderDetail', 'orders.sales.product.productImages'])
-            ->withCount('orders')
-            ->withSum('orders', 'total')
-            ->findOrFail($id);
+        $query = Shipment::query()
+            ->with(['orders' => function ($query) use ($request) {
+                $this->applyOrderFilters($query, $request);
+                $query->with(['orderDetail', 'sales.product.productImages', 'sales.productVariation']);
+            }])
+            ->withCount(['orders as orders_count' => function ($query) use ($request) {
+                $this->applyOrderFilters($query, $request);
+            }])
+            ->withSum(['orders as orders_sum_total' => function ($query) use ($request) {
+                $this->applyOrderFilters($query, $request);
+            }], 'total');
+
+        $this->applyShipmentFilters($query, $request);
+
+        $shipment = $query->findOrFail($id);
 
         return response()->json($shipment);
     }
@@ -116,5 +146,100 @@ class ShipmentController extends Controller
             'success' => true,
             'message' => 'Shipment deleted successfully',
         ]);
+    }
+
+    private function applyShipmentFilters(Builder|Relation $query, Request $request): void
+    {
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->where('created_at', '>=', Carbon::parse($request->date_from)->startOfDay());
+        }
+
+        if ($request->filled('date_to')) {
+            $query->where('created_at', '<=', Carbon::parse($request->date_to)->endOfDay());
+        }
+
+        if ($request->filled('min_total')) {
+            $query->having('orders_sum_total', '>=', $request->min_total);
+        }
+
+        if ($request->filled('max_total')) {
+            $query->having('orders_sum_total', '<=', $request->max_total);
+        }
+
+        if (
+            $request->filled('order_id') ||
+            $request->filled('order_status') ||
+            $request->filled('product_id') ||
+            $request->filled('product_variation_id') ||
+            $request->filled('search') ||
+            $request->has('has_coordinates')
+        ) {
+            $query->whereHas('orders', function ($ordersQuery) use ($request) {
+                $this->applyOrderFilters($ordersQuery, $request);
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($query) use ($search) {
+                $query->where('id', $search)
+                    ->orWhere('notes', 'like', "%{$search}%")
+                    ->orWhereHas('orders', function ($ordersQuery) use ($search) {
+                        $ordersQuery->where('id', $search)
+                            ->orWhereHas('orderDetail', function ($detailQuery) use ($search) {
+                                $detailQuery->where('full_name', 'like', "%{$search}%")
+                                    ->orWhere('phone', 'like', "%{$search}%")
+                                    ->orWhere('address', 'like', "%{$search}%");
+                            });
+                    });
+            });
+        }
+    }
+
+    private function applyOrderFilters(Builder|Relation $query, Request $request): void
+    {
+        if ($request->filled('order_id')) {
+            $query->whereKey($request->order_id);
+        }
+
+        if ($request->filled('order_status')) {
+            $query->where('status', $request->order_status);
+        }
+
+        if ($request->has('has_coordinates')) {
+            $request->boolean('has_coordinates')
+                ? $query->whereNotNull('latitude')->whereNotNull('longitude')
+                : $query->where(function ($query) {
+                    $query->whereNull('latitude')->orWhereNull('longitude');
+                });
+        }
+
+        if ($request->filled('product_id') || $request->filled('product_variation_id')) {
+            $query->whereHas('sales', function ($salesQuery) use ($request) {
+                if ($request->filled('product_id')) {
+                    $salesQuery->where('product_id', $request->product_id);
+                }
+
+                if ($request->filled('product_variation_id')) {
+                    $salesQuery->where('product_variation_id', $request->product_variation_id);
+                }
+            });
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($query) use ($search) {
+                $query->where('id', $search)
+                    ->orWhereHas('orderDetail', function ($detailQuery) use ($search) {
+                        $detailQuery->where('full_name', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%")
+                            ->orWhere('address', 'like', "%{$search}%");
+                    });
+            });
+        }
     }
 }

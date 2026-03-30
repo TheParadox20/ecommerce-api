@@ -68,9 +68,9 @@ Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 //recipe related routes
 Route::get('/recipes', [RecipeController::class, 'index']);
 Route::get('/recipe', [RecipeController::class, 'show']);
-Route::get('/recipes/popular', [RecipeController::class, 'popular']);
-Route::get('/recipes/featured', [RecipeController::class, 'featured']);
-Route::get('/recipes/categories', [RecipeController::class, 'categories']);
+// Route::get('/recipes/popular', [RecipeController::class, 'popular']);
+// Route::get('/recipes/featured', [RecipeController::class, 'featured']);
+// Route::get('/recipes/categories', [RecipeController::class, 'categories']);
 Route::post('/recipes', [RecipeController::class, 'store']);
 Route::put('/recipes/{id}', [RecipeController::class, 'update']);
 Route::delete('/recipes/{id}', [RecipeController::class, 'destroy']);
@@ -83,6 +83,7 @@ Route::post('/blogs/{id}/comments', [BlogController::class, 'storeComment'])->mi
 Route::apiResource('messages', MessagesController::class);
 Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
+
 Route::middleware('auth:sanctum')->group(function () {
     // Admin & User management (restricted to admins in controller logic)
     Route::get('/admins', [AdminManagementController::class, 'index']);
