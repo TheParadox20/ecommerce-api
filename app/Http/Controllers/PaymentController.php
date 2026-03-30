@@ -144,9 +144,8 @@ class PaymentController extends Controller
 
                 logger("Payment SUCCESS | Receipt: $mpesaCode | Amount: $amount | Phone: $phone");
 
-
                 $order->update([
-                    'payment_status' => 'paid',
+                    'payment_status' => 'success',
                     'payment_reference' => $mpesaCode,
                 ]);
 

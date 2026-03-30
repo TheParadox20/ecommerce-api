@@ -57,20 +57,20 @@ class ShipmentController extends Controller
             'notes' => 'nullable|string',
             'orders' => 'required|array|min:1',
             'orders.*.id' => 'required|exists:orders,id',
-            'orders.*.latitude' => 'required|numeric',
-            'orders.*.longitude' => 'required|numeric',
+            'orders.*.latitude' => 'nullable|numeric',
+            'orders.*.longitude' => 'nullable|numeric',
         ]);
 
         $shipment = Shipment::create([
-            'status' => 'pending',
+            'status' => 'shipped',
             'notes' => $data['notes'] ?? null,
         ]);
 
         foreach ($data['orders'] as $orderData) {
             Order::where('id', $orderData['id'])->update([
                 'shipment_id' => $shipment->id,
-                'latitude' => $orderData['latitude'],
-                'longitude' => $orderData['longitude'],
+                'latitude' => $orderData['latitude'] ?? null,
+                'longitude' => $orderData['longitude'] ?? null,
             ]);
         }
 

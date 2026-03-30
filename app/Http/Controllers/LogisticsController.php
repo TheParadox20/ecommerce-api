@@ -44,8 +44,8 @@ class LogisticsController extends Controller
 
         $trendBuckets = $this->generateBuckets($start, $end, $granularity);
 
-        $currentRevenue = $ordersInRange->sum(fn ($order) => (float) $order->total);
-        $previousRevenue = $ordersPreviousRange->sum(fn ($order) => (float) $order->total);
+        $currentRevenue = $ordersInRange->where('payment_status', 'success')->sum(fn ($order) => (float) $order->total);
+        $previousRevenue = $ordersPreviousRange->where('payment_status', 'success')->sum(fn ($order) => (float) $order->total);
 
         $currentDiscountCost = $this->discountCostForOrders($ordersInRange);
         $previousDiscountCost = $this->discountCostForOrders($ordersPreviousRange);
@@ -265,7 +265,7 @@ class LogisticsController extends Controller
     {
         return $buckets->map(function ($bucket) use ($orders) {
             return round($orders
-                ->filter(fn ($order) => $order->created_at >= $bucket['start'] && $order->created_at <= $bucket['end'])
+                ->filter(fn ($order) => $order->created_at >= $bucket['start'] && $order->created_at <= $bucket['end'] && $order->payment_status === 'success')
                 ->sum('total'), 2);
         })->all();
     }
@@ -335,6 +335,7 @@ class LogisticsController extends Controller
     private function topItems(Collection $orders): array
     {
         return $orders
+            ->where('payment_status', 'success')
             ->flatMap->sales
             ->groupBy(function ($sale) {
                 return $sale->product_id . ':' . ($sale->product_variation_id ?? 'base');
@@ -388,6 +389,7 @@ class LogisticsController extends Controller
     private function regionAnalytics(Collection $orders): array
     {
         return $orders
+            ->where('payment_status', 'success')
             ->groupBy(function ($order) {
                 return $this->extractRegion($order->orderDetail?->address);
             })
