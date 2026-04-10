@@ -14,6 +14,9 @@ class UserManagementController extends Controller
     {
         $query = User::query();
 
+        // Exclude accounts with administrative roles
+        $query->whereNotIn('role', ['admin', 'superadmin', 'super_admin']);
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {

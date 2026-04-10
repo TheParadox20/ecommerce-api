@@ -15,8 +15,12 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminManagementController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BlogCommentController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\TestimonialController;
+use App\Http\Controllers\BannerController;
 
 Route::post('/signup', [AuthController::class, 'register']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -45,6 +49,7 @@ Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueContro
 Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class);
 Route::apiResource('product-faqs', App\Http\Controllers\ProductFAQController::class);
 Route::apiResource('categories', App\Http\Controllers\CategoryController::class);
+Route::post('/categories/{id}/restore', [App\Http\Controllers\CategoryController::class, 'restore']);
 Route::apiResource('brands', App\Http\Controllers\BrandController::class);
 Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
 Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class);
@@ -59,6 +64,13 @@ Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/{slug}', [BlogController::class, 'show']);
 Route::post('/blogs/{id}/comments', [BlogController::class, 'storeComment'])->middleware('auth:sanctum');
+
+// Settings, Testimonials, Banners Public
+Route::get('/settings', [SettingController::class, 'index']);
+Route::get('/testimonials', [TestimonialController::class, 'index']);
+Route::get('/reviews', [ReviewController::class, 'index']);
+Route::post('/reviews', [ReviewController::class, 'store']);
+Route::get('/banners', [BannerController::class, 'index']);
 //misc....
 Route::apiResource('messages', MessagesController::class);
 Route::post('/ask', [MessageController::class, 'ask']);
@@ -69,6 +81,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admins', [AdminManagementController::class, 'index']);
     Route::get('/admin/admins', [AdminManagementController::class, 'index']);
     Route::post('/admins', [AdminManagementController::class, 'store']);
+    Route::put('/admin/admins/{id}/password', [AdminManagementController::class, 'updatePassword']);
+    Route::delete('/admin/admins/{id}', [AdminManagementController::class, 'destroy']);
     
     Route::get('/admin/users', [UserManagementController::class, 'index']);
     Route::post('/admin/users/{id}/deactivate', [UserManagementController::class, 'deactivate']);
@@ -83,14 +97,36 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin Blog Routes
     Route::get('/admin/blogs', [BlogController::class, 'adminIndex']);
-    Route::post('/admin/blogs', [BlogController::class, 'store']);
-    Route::put('/admin/blogs/{id}', [BlogController::class, 'update']);
-    Route::delete('/admin/blogs/{id}', [BlogController::class, 'destroy']);
+    Route::apiResource('/admin/blogs', BlogController::class)->except(['index']);
+
+    // Admin Testimonial Routes
+    Route::get('/admin/testimonials', [TestimonialController::class, 'adminIndex']);
+    Route::apiResource('/admin/testimonials', TestimonialController::class)->except(['index']);
+
+    // Admin Review Routes
+    Route::get('/admin/reviews', [ReviewController::class, 'adminIndex']);
+    Route::put('/admin/reviews/{id}/approve', [ReviewController::class, 'approve']);
+    Route::delete('/admin/reviews/{id}', [ReviewController::class, 'destroy']);
+
+    // Admin Setting Routes
+    Route::apiResource('/admin/settings', SettingController::class)->only(['update']);
 
     // Admin Comment Moderation
     Route::get('/admin/comments', [BlogCommentController::class, 'index']);
     Route::put('/admin/comments/{id}/approve', [BlogCommentController::class, 'approve']);
     Route::delete('/admin/comments/{id}', [BlogCommentController::class, 'destroy']);
+
+    // Admin Settings, Testimonials, Banners
+    Route::post('/admin/settings', [SettingController::class, 'store']);
+    Route::get('/admin/testimonials', [TestimonialController::class, 'adminIndex']);
+    Route::post('/admin/testimonials', [TestimonialController::class, 'store']);
+    Route::put('/admin/testimonials/{id}', [TestimonialController::class, 'update']);
+    Route::delete('/admin/testimonials/{id}', [TestimonialController::class, 'destroy']);
+    
+    Route::get('/admin/banners', [BannerController::class, 'adminIndex']);
+    Route::post('/admin/banners', [BannerController::class, 'store']);
+    Route::put('/admin/banners/{id}', [BannerController::class, 'update']);
+    Route::delete('/admin/banners/{id}', [BannerController::class, 'destroy']);
 });
 
 Route::get('/logistics', [LogisticsController::class, 'index']);

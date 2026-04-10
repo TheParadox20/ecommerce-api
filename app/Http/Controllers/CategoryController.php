@@ -9,7 +9,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        return Category::with(['brands.products'])->get();
+        return Category::withTrashed()->with(['brand.products'])->get();
     }
 
     public function store(Request $request)
@@ -17,12 +17,9 @@ class CategoryController extends Controller
         $validated = $request->validate([
             'name' => 'required|string',
             'parent_id' => 'nullable|exists:categories,id',
+            'brand_id' => 'required|exists:brands,id',
         ]);
-        // if category name exists, return its id
-        $category = Category::where('name', $validated['name'])->first();
-        if($category){
-            return response()->json(['success'=>true, 'id'=>$category->id], 200);
-        }
+        
         $category = Category::create($validated);
         return response()->json(['success'=>true, 'id'=>$category->id], 201);
     }
@@ -48,6 +45,13 @@ class CategoryController extends Controller
     {
         $category = Category::findOrFail($id);
         $category->delete();
-        return response()->json(['message' => 'Category deleted']);
+        return response()->json(['success' => true, 'message' => 'Category moved to trash']);
+    }
+
+    public function restore($id)
+    {
+        $category = Category::withTrashed()->where('id', $id)->firstOrFail();
+        $category->restore();
+        return response()->json(['success' => true, 'message' => 'Category restored successfully']);
     }
 }

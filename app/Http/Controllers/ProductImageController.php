@@ -81,6 +81,12 @@ class ProductImageController extends Controller
                             'url' => $url,
                             'is_primary' => $request->is_primary === 'true' || (!isset($request->is_primary) && $index === 0 && count($imagesResponse) === 0)
                         ]);
+
+                        // Update variations that use this filename as a temporary identifier
+                        \App\Models\ProductVariation::where('product_id', $product->id)
+                            ->where('image', $file->getClientOriginalName())
+                            ->update(['image' => $url]);
+
                         $imagesResponse[] = $image;
                     }
                 }

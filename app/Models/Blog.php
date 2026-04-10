@@ -21,6 +21,24 @@ class Blog extends Model
         'allow_comments',
     ];
 
+    protected $with = ['brands', 'products'];
+
+    /**
+     * Relationship: Many-to-Many with Brand
+     */
+    public function brands()
+    {
+        return $this->belongsToMany(Brand::class, 'blog_brand');
+    }
+
+    /**
+     * Relationship: Many-to-Many with Product
+     */
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'blog_product');
+    }
+
     /**
      * Relationship: Many-to-Many with Recipe
      */

@@ -41,7 +41,9 @@ class RecipeController extends Controller
                 $query->where('difficulty', $request->difficulty);
             }
             
-            $recipes = $query->with('products')->orderBy('created_at', 'desc')->paginate(12);
+            $recipes = $query->with(['products' => function($q) {
+                $q->with(['productVariations', 'productImages']);
+            }])->orderBy('created_at', 'desc')->paginate(12);
             
             return response()->json([
                 'success' => true,
@@ -58,11 +60,15 @@ class RecipeController extends Controller
     public function show($slug)
     {
         try {
-            $recipe = Recipe::with('products')->where('slug', $slug)->first();
+            $recipe = Recipe::with(['products' => function($q) {
+                $q->with(['productVariations', 'productImages']);
+            }])->where('slug', $slug)->first();
             
             if (!$recipe) {
                 // Try finding by ID as fallback for admin
-                $recipe = Recipe::with('products')->find($slug);
+                $recipe = Recipe::with(['products' => function($q) {
+                    $q->with(['productVariations', 'productImages']);
+                }])->find($slug);
             }
 
             if (!$recipe) {
@@ -98,6 +104,14 @@ class RecipeController extends Controller
     public function store(Request $request)
     {
         try {
+            // Decode ingredients and instructions if they come as strings (from FormData)
+            if (is_string($request->ingredients)) {
+                $request->merge(['ingredients' => json_decode($request->ingredients, true)]);
+            }
+            if (is_string($request->instructions)) {
+                $request->merge(['instructions' => json_decode($request->instructions, true)]);
+            }
+
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'slug' => 'required|string|unique:recipes,slug',
@@ -109,11 +123,20 @@ class RecipeController extends Controller
                 'difficulty' => 'required|in:easy,medium,hard',
                 'category' => 'required|string',
                 'status' => 'required|in:draft,published',
-                'image' => 'nullable|string',
+                'image' => 'nullable', // Can be string or file
                 'video_url' => 'nullable|string',
                 'product_ids' => 'nullable|array',
                 'product_ids.*' => 'exists:products,id'
             ]);
+
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $destinationPath = public_path("storage/recipes");
+                $extension = $file->getClientOriginalExtension();
+                $name = time() . '_' . str_replace(' ', '_', $validated['slug']) . '.' . $extension;
+                $file->move($destinationPath, $name);
+                $validated['image'] = url("storage/recipes/" . $name);
+            }
 
             $recipe = Recipe::create($validated);
 
@@ -138,6 +161,14 @@ class RecipeController extends Controller
     {
         try {
             $recipe = Recipe::findOrFail($id);
+
+            // Decode ingredients and instructions if they come as strings (from FormData)
+            if (is_string($request->ingredients)) {
+                $request->merge(['ingredients' => json_decode($request->ingredients, true)]);
+            }
+            if (is_string($request->instructions)) {
+                $request->merge(['instructions' => json_decode($request->instructions, true)]);
+            }
             
             $validated = $request->validate([
                 'title' => 'sometimes|required|string|max:255',
@@ -150,11 +181,29 @@ class RecipeController extends Controller
                 'difficulty' => 'sometimes|required|in:easy,medium,hard',
                 'category' => 'sometimes|required|string',
                 'status' => 'sometimes|required|in:draft,published',
-                'image' => 'nullable|string',
+                'image' => 'nullable', // can be string or file
                 'video_url' => 'nullable|string',
                 'product_ids' => 'nullable|array',
                 'product_ids.*' => 'exists:products,id'
             ]);
+
+            if ($request->hasFile('image')) {
+                // Delete old image if it exists and is local
+                if ($recipe->image && str_contains($recipe->image, url('storage/recipes'))) {
+                    $oldPath = public_path(str_replace(url('/'), '', $recipe->image));
+                    if (file_exists($oldPath)) {
+                        unlink($oldPath);
+                    }
+                }
+
+                $file = $request->file('image');
+                $destinationPath = public_path("storage/recipes");
+                $extension = $file->getClientOriginalExtension();
+                $slug = $validated['slug'] ?? $recipe->slug;
+                $name = time() . '_' . str_replace(' ', '_', $slug) . '.' . $extension;
+                $file->move($destinationPath, $name);
+                $validated['image'] = url("storage/recipes/" . $name);
+            }
 
             $recipe->update($validated);
 
@@ -179,6 +228,15 @@ class RecipeController extends Controller
     {
         try {
             $recipe = Recipe::findOrFail($id);
+            
+            // Delete image if it exists and is local
+            if ($recipe->image && str_contains($recipe->image, url('storage/recipes'))) {
+                $oldPath = public_path(str_replace(url('/'), '', $recipe->image));
+                if (file_exists($oldPath)) {
+                    unlink($oldPath);
+                }
+            }
+
             $recipe->delete();
             
             return response()->json([

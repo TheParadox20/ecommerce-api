@@ -9,27 +9,22 @@ class BrandController extends Controller
 {
     public function index()
     {
-        return Brand::with(['products'])->get();
+        return Brand::with(['categories'])->get();
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string',
-            'category_id' => 'nullable|exists:categories,id',
+            'name' => 'required|string|unique:brands,name',
         ]);
-        // if brand name exists, return its id
-        $brand = Brand::where('name', $validated['name'])->first();
-        if($brand){
-            return response()->json(['success'=>true, 'id'=>$brand->id], 200);
-        }
+
         $brand = Brand::create($validated);
         return response()->json(['success'=>true, 'id'=>$brand->id], 201);
     }
 
     public function show($id)
     {
-        $brand = Brand::with(['products'])->findOrFail($id);
+        $brand = Brand::with(['categories'])->findOrFail($id);
         return response()->json($brand);
     }
 
@@ -38,10 +33,10 @@ class BrandController extends Controller
         $brand = Brand::findOrFail($id);
         $validated = $request->validate([
             'name' => 'sometimes|string|unique:brands,name,' . $id,
-            'category_id' => 'nullable|exists:categories,id',
         ]);
+
         $brand->update($validated);
-        return response()->json($brand->load(['products']));
+        return response()->json($brand->load(['categories']));
     }
 
     public function destroy($id)

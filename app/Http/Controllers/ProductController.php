@@ -144,6 +144,7 @@ class ProductController extends Controller
                                     'price' => $details['price'] ?? $product->price ?? 0,
                                     'stock' => $details['stock'] ?? 0,
                                     'discount' => $details['discount'] ?? null,
+                                    'image' => $details['image'] ?? null,
                                     'status' => 'active',
                                 ]);
                             }
@@ -188,7 +189,7 @@ class ProductController extends Controller
             'brand',
             'faqs',
             'description',
-            'reviews'
+            'approvedReviews'
         ])->where('slug', $identifier)
           ->orWhere('name', $identifier)
           ->orWhere('id', $identifier)
@@ -275,6 +276,7 @@ class ProductController extends Controller
                                         'price' => $details['price'] ?? $product->price ?? 0,
                                         'stock' => $details['stock'] ?? 0,
                                         'discount' => $details['discount'] ?? null,
+                                        'image' => $details['image'] ?? null,
                                         'status' => 'active',
                                     ]
                                 );

@@ -170,9 +170,24 @@ class LogisticsController extends Controller
         $now = Carbon::now();
 
         if ($request->filled('date_from') && $request->filled('date_to')) {
-            $start = Carbon::parse($request->date_from)->startOfDay();
-            $end = Carbon::parse($request->date_to)->endOfDay();
-            $label = 'custom range';
+            try {
+                $start = Carbon::parse($request->date_from)->startOfDay();
+                $end = Carbon::parse($request->date_to)->endOfDay();
+                
+                // Ensure start is before end
+                if ($start->gt($end)) {
+                    $temp = $start;
+                    $start = $end->copy()->startOfDay();
+                    $end = $temp->copy()->endOfDay();
+                }
+                
+                $label = 'custom range';
+            } catch (\Exception $e) {
+                // Fallback to default if parsing fails
+                $start = $now->copy()->subDays(6)->startOfDay();
+                $end = $now->copy()->endOfDay();
+                $label = '7d';
+            }
         } else {
             $time = strtoupper((string) $request->get('time', '7D'));
             $start = match ($time) {

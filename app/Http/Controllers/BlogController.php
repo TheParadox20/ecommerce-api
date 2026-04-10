@@ -14,15 +14,33 @@ class BlogController extends Controller
     /**
      * Display a listing of blogs (Public).
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            $blogs = Blog::where('status', 'published')
-                ->withCount(['comments' => function ($query) {
+            $query = Blog::where('status', 'published');
+
+            if ($request->has('brand_id')) {
+                $query->whereHas('brands', function($q) use ($request) {
+                    $q->where('brands.id', $request->brand_id);
+                });
+            }
+
+            if ($request->has('product_id')) {
+                $query->whereHas('products', function($q) use ($request) {
+                    $q->where('products.id', $request->product_id);
+                });
+            }
+
+            if ($request->has('search')) {
+                $query->where('title', 'like', '%' . $request->search . '%')
+                      ->orWhere('excerpt', 'like', '%' . $request->search . '%');
+            }
+
+            $blogs = $query->withCount(['comments' => function ($query) {
                     $query->where('is_approved', true);
                 }])
                 ->orderBy('created_at', 'desc')
-                ->paginate(12);
+                ->paginate($request->query('per_page', 12));
 
             return response()->json([
                 'success' => true,
@@ -55,6 +73,26 @@ class BlogController extends Controller
                 'success' => false,
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Display the specified blog for Admin.
+     */
+    public function adminShow($id)
+    {
+        try {
+            $blog = Blog::with(['recipes', 'brands', 'products'])->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'blog' => $blog
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Blog not found'
+            ], 404);
         }
     }
 
@@ -100,38 +138,60 @@ class BlogController extends Controller
      */
     public function store(Request $request)
     {
+        // Decode IDs if they come as JSON strings from FormData
+        if (is_string($request->recipe_ids)) $request->merge(['recipe_ids' => json_decode($request->recipe_ids, true)]);
+        if (is_string($request->brand_ids)) $request->merge(['brand_ids' => json_decode($request->brand_ids, true)]);
+        if (is_string($request->product_ids)) $request->merge(['product_ids' => json_decode($request->product_ids, true)]);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255|unique:blogs,title',
             'excerpt' => 'nullable|string',
             'content' => 'required|string',
-            'featured_image' => 'nullable|string',
-            'youtube_url' => 'nullable|string|url',
+            'featured_image' => 'nullable', // Can be file or string
+            'youtube_url' => 'nullable|string',
             'status' => 'required|in:draft,published',
-            'allow_comments' => 'required|boolean',
+            'allow_comments' => 'required', // Handle boolean from FormData
             'recipe_ids' => 'nullable|array',
             'recipe_ids.*' => 'exists:recipes,id',
+            'brand_ids' => 'nullable|array',
+            'brand_ids.*' => 'exists:brands,id',
+            'product_ids' => 'nullable|array',
+            'product_ids.*' => 'exists:products,id',
         ]);
 
         DB::beginTransaction();
         try {
-            // Auto-generate slug if not provided
             $validated['slug'] = Str::slug($validated['title']);
-            
-            // Basic HTML sanitization for content (allow common tags)
             $validated['content'] = $this->sanitizeHtml($validated['content']);
+            $validated['allow_comments'] = filter_var($request->allow_comments, FILTER_VALIDATE_BOOLEAN);
+
+            if ($request->hasFile('featured_image')) {
+                $file = $request->file('featured_image');
+                $destinationPath = public_path("storage/blogs");
+                
+                // Ensure directory exists
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0755, true);
+                }
+
+                $extension = $file->getClientOriginalExtension();
+                $name = time() . '_' . str_replace(' ', '_', $validated['slug']) . '.' . $extension;
+                $file->move($destinationPath, $name);
+                $validated['featured_image'] = url("storage/blogs/" . $name);
+            }
 
             $blog = Blog::create($validated);
 
-            if (!empty($validated['recipe_ids'])) {
-                $blog->recipes()->sync($validated['recipe_ids']);
-            }
+            if (!empty($request->recipe_ids)) $blog->recipes()->sync($request->recipe_ids);
+            if (!empty($request->brand_ids)) $blog->brands()->sync($request->brand_ids);
+            if (!empty($request->product_ids)) $blog->products()->sync($request->product_ids);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Blog created successfully',
-                'blog' => $blog
+                'blog' => $blog->load(['brands', 'products'])
             ], 201);
         } catch (Exception $e) {
             DB::rollBack();
@@ -149,40 +209,67 @@ class BlogController extends Controller
     {
         $blog = Blog::findOrFail($id);
 
+        // Decode IDs if they come as JSON strings from FormData
+        if (is_string($request->recipe_ids)) $request->merge(['recipe_ids' => json_decode($request->recipe_ids, true)]);
+        if (is_string($request->brand_ids)) $request->merge(['brand_ids' => json_decode($request->brand_ids, true)]);
+        if (is_string($request->product_ids)) $request->merge(['product_ids' => json_decode($request->product_ids, true)]);
+
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255|unique:blogs,title,' . $id,
             'excerpt' => 'nullable|string',
             'content' => 'sometimes|required|string',
-            'featured_image' => 'nullable|string',
-            'youtube_url' => 'nullable|string|url',
+            'featured_image' => 'nullable',
+            'youtube_url' => 'nullable|string',
             'status' => 'sometimes|required|in:draft,published',
-            'allow_comments' => 'sometimes|required|boolean',
+            'allow_comments' => 'sometimes|required',
             'recipe_ids' => 'nullable|array',
             'recipe_ids.*' => 'exists:recipes,id',
+            'brand_ids' => 'nullable|array',
+            'brand_ids.*' => 'exists:brands,id',
+            'product_ids' => 'nullable|array',
+            'product_ids.*' => 'exists:products,id',
         ]);
 
         DB::beginTransaction();
         try {
-            if (isset($validated['title'])) {
-                $validated['slug'] = Str::slug($validated['title']);
-            }
+            if (isset($validated['title'])) $validated['slug'] = Str::slug($validated['title']);
+            if (isset($validated['content'])) $validated['content'] = $this->sanitizeHtml($validated['content']);
+            if (isset($request->allow_comments)) $validated['allow_comments'] = filter_var($request->allow_comments, FILTER_VALIDATE_BOOLEAN);
 
-            if (isset($validated['content'])) {
-                $validated['content'] = $this->sanitizeHtml($validated['content']);
+            if ($request->hasFile('featured_image')) {
+                // Delete old image if it exists and is local
+                if ($blog->featured_image && str_contains($blog->featured_image, url('storage/blogs'))) {
+                    $oldPath = public_path(str_replace(url('/'), '', $blog->featured_image));
+                    if (file_exists($oldPath)) unlink($oldPath);
+                }
+
+                $file = $request->file('featured_image');
+                $destinationPath = public_path("storage/blogs");
+
+                // Ensure directory exists
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0755, true);
+                }
+
+                $extension = $file->getClientOriginalExtension();
+                $slug = $validated['slug'] ?? $blog->slug;
+                $name = time() . '_' . str_replace(' ', '_', $slug) . '.' . $extension;
+                $file->move($destinationPath, $name);
+                $validated['featured_image'] = url("storage/blogs/" . $name);
             }
 
             $blog->update($validated);
 
-            if (isset($validated['recipe_ids'])) {
-                $blog->recipes()->sync($validated['recipe_ids']);
-            }
+            if (isset($request->recipe_ids)) $blog->recipes()->sync($request->recipe_ids);
+            if (isset($request->brand_ids)) $blog->brands()->sync($request->brand_ids);
+            if (isset($request->product_ids)) $blog->products()->sync($request->product_ids);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Blog updated successfully',
-                'blog' => $blog
+                'blog' => $blog->load(['brands', 'products'])
             ]);
         } catch (Exception $e) {
             DB::rollBack();
@@ -200,6 +287,13 @@ class BlogController extends Controller
     {
         try {
             $blog = Blog::findOrFail($id);
+            
+            // Delete image if it exists and is local
+            if ($blog->featured_image && str_contains($blog->featured_image, url('storage/blogs'))) {
+                $oldPath = public_path(str_replace(url('/'), '', $blog->featured_image));
+                if (file_exists($oldPath)) unlink($oldPath);
+            }
+
             $blog->delete(); // Cascade handles junction and comments
 
             return response()->json([
