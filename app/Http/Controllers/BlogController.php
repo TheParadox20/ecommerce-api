@@ -110,8 +110,8 @@ class BlogController extends Controller
                 ->first();
 
             if (!$blog) {
-                // Fallback for admin if slug is not found as published
-                $blog = Blog::where('slug', $slug)->with(['recipes', 'comments.user'])->first();
+                // Try finding by ID as fallback for admin edit
+                $blog = Blog::with(['recipes', 'brands', 'products', 'comments.user'])->find($slug);
                 
                 if (!$blog || ($blog->status != 'published' && (!auth()->user() || !auth()->user()->isAdmin()))) {
                      return response()->json([
@@ -324,19 +324,21 @@ class BlogController extends Controller
 
         $validated = $request->validate([
             'comment' => 'required|string|max:1000',
+            'name' => auth()->check() ? 'nullable|string|max:255' : 'required|string|max:255',
         ]);
 
         try {
             $comment = BlogComment::create([
                 'blog_id' => $blog->id,
                 'user_id' => auth()->id(),
+                'guest_name' => auth()->check() ? null : $validated['name'],
                 'comment' => $validated['comment'],
-                'is_approved' => true, // Default to true as per requirements, but can be changed later
+                'is_approved' => false, // Require admin approval
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Comment submitted successfully',
+                'message' => 'Comment submitted and is awaiting approval',
                 'comment' => $comment->load('user')
             ], 201);
         } catch (Exception $e) {

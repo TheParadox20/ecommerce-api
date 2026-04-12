@@ -38,6 +38,12 @@ class SalesController extends Controller
             case 'total_desc':
                 $query->orderBy('total', 'desc');
                 break;
+            case 'shipping_asc':
+                $query->orderBy('expected_shipping_date', 'asc');
+                break;
+            case 'shipping_desc':
+                $query->orderBy('expected_shipping_date', 'desc');
+                break;
             default:
                 $query->orderBy('created_at', 'desc');
                 break;
@@ -141,11 +147,13 @@ class SalesController extends Controller
         }
 
         if ($request->filled('date_from')) {
-            $query->where('created_at', '>=', Carbon::parse($request->date_from)->startOfDay());
+            $column = str_contains($request->get('sort'), 'shipping') ? 'expected_shipping_date' : 'created_at';
+            $query->where($column, '>=', Carbon::parse($request->date_from)->startOfDay());
         }
 
         if ($request->filled('date_to')) {
-            $query->where('created_at', '<=', Carbon::parse($request->date_to)->endOfDay());
+            $column = str_contains($request->get('sort'), 'shipping') ? 'expected_shipping_date' : 'created_at';
+            $query->where($column, '<=', Carbon::parse($request->date_to)->endOfDay());
         }
 
         if ($request->filled('shipment_status')) {

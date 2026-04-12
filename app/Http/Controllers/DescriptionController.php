@@ -45,7 +45,9 @@ class DescriptionController extends Controller
     {
         $description = Description::with('product.productImages')
             ->whereHas('product', function($query) use ($product) {
-                $query->where('name', $product);
+                $query->where('slug', $product)
+                      ->orWhere('name', 'like', $product)
+                      ->orWhere('id', $product);
             })
             ->first();
         return response()->json($description);

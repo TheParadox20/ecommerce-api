@@ -18,7 +18,7 @@ class AttributeController extends Controller
             'name' => 'required|string|unique:attributes,name',
         ]);
         $attribute = Attribute::create($validated);
-        return response()->json($attribute->load('attributeValues'), 201);
+        return response()->json(['success' => true, 'attribute' => $attribute->load('attributeValues')], 201);
     }
 
     public function show($id)
@@ -34,13 +34,13 @@ class AttributeController extends Controller
             'name' => 'sometimes|string|unique:attributes,name,' . $id,
         ]);
         $attribute->update($validated);
-        return response()->json($attribute->load('attributeValues'));
+        return response()->json(['success' => true, 'attribute' => $attribute->load('attributeValues')]);
     }
 
     public function destroy($id)
     {
         $attribute = Attribute::findOrFail($id);
         $attribute->delete();
-        return response()->json(['message' => 'Attribute deleted']);
+        return response()->json(['success' => true, 'message' => 'Attribute deleted']);
     }
 }

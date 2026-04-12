@@ -40,8 +40,6 @@ class ReviewController extends Controller
                 $distribution = [0, 0, 0, 0, 0];
                 if ($total > 0) {
                     for ($i = 5; $i >= 1; $i--) {
-                        $count = $allApproved->where('rate', '>=', $i)->where('rate', '<', $i + 1)->count();
-                        // For distribution bars, we use exactly that rating
                         $count = $allApproved->where('rate', $i)->count();
                         $distribution[5 - $i] = round(($count / $total) * 100);
                     }
@@ -63,44 +61,29 @@ class ReviewController extends Controller
                 ]);
             }
 
-            // Fetch only approved product reviews with their associated product
-            $productReviews = Review::with('product')
+            // Fetch only approved reviews (Unified index)
+            $allApproved = Review::with('product')
                 ->where('status', 'approved')
                 ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function($review) {
-                    return [
-                        'id' => 'review_' . $review->id,
-                        'name' => $review->reviewer_name ?: 'Verified Customer',
-                        'role' => 'Customer',
-                        'comment' => $review->review,
-                        'rating' => $review->rate,
-                        'type' => 'review',
-                        'product' => $review->product,
-                        'created_at' => $review->created_at,
-                    ];
-                });
-
-            // Fetch all active testimonials
-            $testimonials = Testimonial::where('is_active', true)->orderBy('created_at', 'desc')->get()->map(function($testimonial) {
+                ->get();
+            
+            $formatted = $allApproved->map(function($review) {
                 return [
-                    'id' => 'testimonial_' . $testimonial->id,
-                    'name' => $testimonial->name,
-                    'role' => $testimonial->role,
-                    'comment' => $testimonial->comment,
-                    'rating' => $testimonial->rating,
-                    'type' => 'testimonial',
-                    'product' => null,
-                    'created_at' => $testimonial->created_at,
+                    'id' => $review->id,
+                    'name' => $review->reviewer_name ?: 'Verified Customer',
+                    'role' => $review->role ?: ($review->product ? 'Customer' : 'Happy Client'),
+                    'comment' => $review->review,
+                    'rating' => (int)$review->rate,
+                    'type' => $review->product_id ? 'review' : 'testimonial',
+                    'product' => $review->product,
+                    'date' => $review->created_at->diffForHumans(),
+                    'created_at' => $review->created_at,
                 ];
             });
-            
-            // Combine and sort by date
-            $combined = $productReviews->concat($testimonials)->sortByDesc('created_at')->values();
 
             return response()->json([
                 'success' => true,
-                'data' => $combined
+                'data' => $formatted
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -165,6 +148,37 @@ class ReviewController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to approve review: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified review in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $review = Review::findOrFail($id);
+            $validated = $request->validate([
+                'product_id' => 'sometimes|nullable|exists:products,id',
+                'reviewer_name' => 'sometimes|string|max:255',
+                'role' => 'sometimes|string|max:255|nullable',
+                'review' => 'sometimes|string',
+                'rate' => 'sometimes|numeric|min:1|max:5',
+                'status' => 'sometimes|string|in:pending,approved',
+            ]);
+
+            $review->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Review updated successfully',
+                'data' => $review
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update review: ' . $e->getMessage()
             ], 500);
         }
     }

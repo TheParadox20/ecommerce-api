@@ -25,7 +25,21 @@ class ProductsController extends Controller
     }
     
     public function index(Request $request){
-        $products = Product::with(['media','category','brand'])->get();
+        $query = Product::with(['media','category','brand']);
+        
+        if ($request->has('category')) {
+            $query->whereHas('category', function($q) use ($request) {
+                $q->where('categories.name', $request->category);
+            });
+        }
+        
+        if ($request->has('brand')) {
+            $query->whereHas('brand', function($q) use ($request) {
+                $q->where('brands.name', $request->brand);
+            });
+        }
+
+        $products = $query->paginate(12);
         return response()->json($products);
     }
 
@@ -76,14 +90,28 @@ class ProductsController extends Controller
             $product = Product::find($request->id);
             throw_if(!$product,'Missing product');
 
+            // Cleanup old description media if new ones are being uploaded
+            if ($request->hasFile("description0")) {
+                $oldMedia = Media::where('product_id', $request->id)->where('purpose', 'description')->get();
+                foreach ($oldMedia as $m) {
+                    if ($m->url && str_contains($m->url, url('storage/products'))) {
+                        $oldPath = str_replace(url(''), public_path(), $m->url);
+                        if (file_exists($oldPath)) @unlink($oldPath);
+                    }
+                    $m->delete();
+                }
+            }
+
             for ($i=0; $i < 100; $i++) { 
                 $file = $request->file("description$i");
                 if($file==null){
                     logger("Files saved upto file :: $i");
                     break;
                 }
-                $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
-                $name = str_replace(' ', '_', $file->getClientOriginalName());
+                $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
+                if (!file_exists($destinationPath)) mkdir($destinationPath, 0755, true);
+
+                $name = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
                 $file->move($destinationPath, $name);
                 $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
                 Media::create([
@@ -111,14 +139,28 @@ class ProductsController extends Controller
             $product = Product::find($request->id);
             throw_if(!$product,'Missing product');
 
+            // Cleanup old gallery media if new ones are being uploaded
+            if ($request->hasFile("media0")) {
+                $oldMedia = Media::where('product_id', $request->id)->where('purpose', 'media')->get();
+                foreach ($oldMedia as $m) {
+                    if ($m->url && str_contains($m->url, url('storage/products'))) {
+                        $oldPath = str_replace(url(''), public_path(), $m->url);
+                        if (file_exists($oldPath)) @unlink($oldPath);
+                    }
+                    $m->delete();
+                }
+            }
+
             for ($i=0; $i < 100; $i++) { 
                 $file = $request->file("media$i");
                 if($file==null){
                     logger("Media Files saved upto file :: $i");
                     break;
                 }
-                $destinationPath = public_path(path: "storage/products/") . str_replace(' ', '_', $product->name);
-                $name = str_replace(' ', '_', $file->getClientOriginalName());
+                $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
+                if (!file_exists($destinationPath)) mkdir($destinationPath, 0755, true);
+
+                $name = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
                 $file->move($destinationPath, $name);
                 $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
                 Media::create([
@@ -155,35 +197,7 @@ class ProductsController extends Controller
         return response()->json($products);
     }
     public function adminListing(Request $request){
-        $product = [
-            'id'=>'AX87OZ',
-            'image'=>ProductsController::media('Product name','GrainmillOatsEdited.png'),
-            'title'=>'Product title',
-            'name'=>'Product name and description',
-            'price'=>400,
-            'message'=>'Low Stock Alerts'
-        ];
-        $products = [
-            [
-                'name' => 'Group A',
-                'products' => array_fill(0, 8, $product),
-                'count' => 8,
-                'stock' => 43,
-            ],
-            [
-                'name' => 'Group B',
-                'products' => array_fill(0, 6, $product),
-                'count' => 6,
-                'stock' => 54,
-            ],
-            [
-                'name' => 'Group C',
-                'products' => array_fill(0, 3, $product),
-                'count' => 3,
-                'stock' => 9,
-            ],
-        ];
-        return response()->json($products);
+        return Product::select('id', 'name')->orderBy('name', 'asc')->get();
     }
     public function product(Request $request){
         try{

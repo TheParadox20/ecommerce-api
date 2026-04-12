@@ -125,8 +125,29 @@ class ProductImageController extends Controller
 
     public function destroy($id)
     {
-        $image = ProductImage::findOrFail($id);
-        $image->delete();
-        return response()->json(['message' => 'Product image deleted']);
+        try {
+            $image = ProductImage::findOrFail($id);
+            
+            // Delete file from disk if it exists and is local
+            if ($image->url && str_contains($image->url, url('storage/products'))) {
+                try {
+                    $path_parts = explode('storage/products/', $image->url);
+                    if (count($path_parts) > 1) {
+                        $relativePath = 'storage/products/' . $path_parts[1];
+                        $absolutePath = public_path($relativePath);
+                        if (file_exists($absolutePath)) {
+                            unlink($absolutePath);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to unlink product image on destroy: ' . $e->getMessage());
+                }
+            }
+
+            $image->delete();
+            return response()->json(['success' => true, 'message' => 'Product image deleted successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 400);
+        }
     }
 }

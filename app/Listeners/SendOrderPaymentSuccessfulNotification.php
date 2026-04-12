@@ -6,7 +6,7 @@ use App\Events\OrderPaymentSuccessful;
 use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\OrderPaymentSuccessfulMail;
+use App\Mail\OrderNotification;
 
 class SendOrderPaymentSuccessfulNotification
 {
@@ -15,71 +15,52 @@ class SendOrderPaymentSuccessfulNotification
         $order = $event->order;
         $order->load(['orderDetail', 'sales.product', 'sales.productVariation']);
 
-        // Send email to admin
+        // 1. Send Email with PDF Invoice
         try {
-            Mail::to(config('mail.from.address'))->send(new OrderPaymentSuccessfulMail($order));
+            $recipients = ['sales@ngwindsongk.com'];
+            if ($order->orderDetail && $order->orderDetail->email) {
+                $recipients[] = $order->orderDetail->email;
+            }
+
+            Mail::to($recipients)->send(new OrderNotification($order));
         }
         catch (\Exception $e) {
             Log::error('Order email failed: ' . $e->getMessage());
         }
 
-        // Send SMS notification to admins
-        try {
-            $client = new Client();
-            $endpoint = 'https://api2.tiaraconnect.io/api/messaging/sendsms';
-            $apiKey = config('app.TIARA_KEY');
-            $from = 'TIARACONECT';
-            $message = 'Order ' . $order->slug . ' - Payment successful. Total: ' . $order->total . ' KES. Please process the order.';
-            $recipients = ['254791210705', '254718156421', '254113748906'];
-
-            foreach ($recipients as $to) {
-                try {
-                    $response = $client->post($endpoint, [
-                        'headers' => [
-                            'Content-Type' => 'application/json',
-                            'Authorization' => 'Bearer ' . $apiKey,
-                        ],
-                        'json' => [
-                            'to' => $to,
-                            'from' => $from,
-                            'message' => $message,
-                        ],
-                    ]);
-
-                    $responseBody = $response->getBody()->getContents();
-                    Log::info("Payment Success Admin SMS|msisdn: $to|response: $responseBody | url: $endpoint");
-                }
-                catch (\Exception $e) {
-                    Log::error("Payment Success Admin SMS failed|msisdn: $to|error: " . $e->getMessage());
-                }
-            }
-        }
-        catch (\Exception $e) {
-            Log::error("SMS setup failed: " . $e->getMessage());
-        }
-
-        // Send SMS confirmation to buyer
+        // 2. Send SMS notification to Payer
         if ($order->orderDetail && $order->orderDetail->phone) {
             try {
-                $client = $client ?? new Client();
-                $buyerMessage = 'Hi ' . ($order->orderDetail->full_name ?: 'there') . ', your payment of KES ' . number_format($order->total) . ' for order ' . $order->slug . ' has been received successfully! Thank you for shopping with NG Windsong Kenya!';
+                $client = new Client();
+                $apiKey = config('app.TIARA_KEY');
+                
+                // Format items for SMS
+                $itemsSummary = $order->sales->map(function($sale) {
+                    $size = $sale->productVariation->name ?? 'Std';
+                    return "{$sale->product->name} x{$sale->quantity} ({$size})";
+                })->implode(', ');
 
-                $response = $client->post('https://api2.tiaraconnect.io/api/messaging/sendsms', [
+                $shippingDate = \Carbon\Carbon::parse($order->expected_shipping_date)->format('M d');
+                $buyerMessage = "Order #{$order->slug} Confirmed! Items: {$itemsSummary}. Total: KES " . number_format($order->total) . ". Delivery: {$order->orderDetail->address}. Expected Shipment: {$shippingDate}. Thank you for shopping with NG Windsong Kenya!";
+
+                $to = '254' . preg_replace('/\D/', '', ltrim($order->orderDetail->phone, '+2540'));
+
+                $client->post('https://api2.tiaraconnect.io/api/messaging/sendsms', [
                     'headers' => [
                         'Content-Type' => 'application/json',
-                        'Authorization' => 'Bearer ' . config('app.TIARA_KEY'),
+                        'Authorization' => 'Bearer ' . $apiKey,
                     ],
                     'json' => [
-                        'to' => $order->orderDetail->phone,
+                        'to' => $to,
                         'from' => 'TIARACONECT',
                         'message' => $buyerMessage,
                     ],
                 ]);
 
-                Log::info("Payment Success Buyer SMS|msisdn: {$order->orderDetail->phone}|response: " . $response->getBody()->getContents());
+                Log::info("Payment Success Buyer SMS|msisdn: $to|sent successfully");
             }
             catch (\Exception $e) {
-                Log::error("Payment Success Buyer SMS failed|msisdn: {$order->orderDetail->phone}|error: " . $e->getMessage());
+                Log::error("Payment Success Buyer SMS failed|error: " . $e->getMessage());
             }
         }
     }

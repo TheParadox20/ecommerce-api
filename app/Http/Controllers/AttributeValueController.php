@@ -23,7 +23,10 @@ class AttributeValueController extends Controller
         if ($request->has('product_variation_ids')) {
             $attributeValue->productVariations()->sync($request->input('product_variation_ids'));
         }
-        return response()->json($attributeValue->load(['attribute', 'productVariations']), 201);
+        return response()->json([
+            'success' => true,
+            'attribute_value' => $attributeValue->load(['attribute', 'productVariations'])
+        ], 201);
     }
 
     public function show($id)
@@ -43,13 +46,16 @@ class AttributeValueController extends Controller
         if ($request->has('product_variation_ids')) {
             $attributeValue->productVariations()->sync($request->input('product_variation_ids'));
         }
-        return response()->json($attributeValue->load(['attribute', 'productVariations']));
+        return response()->json([
+            'success' => true,
+            'attribute_value' => $attributeValue->load(['attribute', 'productVariations'])
+        ]);
     }
 
     public function destroy($id)
     {
         $attributeValue = AttributeValue::findOrFail($id);
         $attributeValue->delete();
-        return response()->json(['message' => 'Attribute value deleted']);
+        return response()->json(['success' => true, 'message' => 'Attribute value deleted']);
     }
 }

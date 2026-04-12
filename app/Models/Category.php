@@ -15,6 +15,7 @@ class Category extends Model
     protected $fillable = [
         'name',
         'parent_id',
+        'brand_id',
     ];
 
     public function products(): HasMany

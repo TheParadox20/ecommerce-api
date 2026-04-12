@@ -14,6 +14,10 @@ class Brand extends Model
     use HasFactory, SoftDeletes;
     protected $fillable = [
         'name',
+        'logo',
+        'description',
+        'color_hex',
+        'is_active',
     ];
 
     public function products(): HasMany

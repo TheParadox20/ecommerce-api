@@ -21,6 +21,9 @@ use App\Http\Controllers\BlogCommentController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\TestimonialController;
 use App\Http\Controllers\BannerController;
+use App\Http\Controllers\NavMenuController;
+
+Route::get('/nav-menus', [NavMenuController::class, 'index']);
 
 Route::post('/signup', [AuthController::class, 'register']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -63,7 +66,7 @@ Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 // Blog Public Routes
 Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/{slug}', [BlogController::class, 'show']);
-Route::post('/blogs/{id}/comments', [BlogController::class, 'storeComment'])->middleware('auth:sanctum');
+Route::post('/blogs/{id}/comments', [BlogController::class, 'storeComment']);
 
 // Settings, Testimonials, Banners Public
 Route::get('/settings', [SettingController::class, 'index']);
@@ -107,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/reviews', [ReviewController::class, 'adminIndex']);
     Route::put('/admin/reviews/{id}/approve', [ReviewController::class, 'approve']);
     Route::delete('/admin/reviews/{id}', [ReviewController::class, 'destroy']);
+    Route::patch('/admin/reviews/{id}', [ReviewController::class, 'update']);
 
     // Admin Setting Routes
     Route::apiResource('/admin/settings', SettingController::class)->only(['update']);
@@ -127,6 +131,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/banners', [BannerController::class, 'store']);
     Route::put('/admin/banners/{id}', [BannerController::class, 'update']);
     Route::delete('/admin/banners/{id}', [BannerController::class, 'destroy']);
+    
+    // Admin NavMenu Routes
+    Route::get('/admin/nav-menus', [NavMenuController::class, 'adminIndex']);
+    Route::post('/admin/nav-menus', [NavMenuController::class, 'store']);
+    Route::put('/admin/nav-menus/{id}', [NavMenuController::class, 'update']);
+    Route::delete('/admin/nav-menus/{id}', [NavMenuController::class, 'destroy']);
+    Route::post('/admin/nav-menus/reorder', [NavMenuController::class, 'reorder']);
+
+    // Global Media Hub
+    Route::post('/admin/media/upload', [App\Http\Controllers\MediaController::class, 'upload']);
+
+    // Reporting & PDF Routes
+    Route::get('/export/sales', [App\Http\Controllers\ExportController::class, 'sales']);
+    Route::get('/export/deliveries', [App\Http\Controllers\ExportController::class, 'deliveries']);
+    Route::get('/orders/{slug}/invoice', [App\Http\Controllers\PDFController::class, 'downloadInvoice']);
 });
 
 Route::get('/logistics', [LogisticsController::class, 'index']);

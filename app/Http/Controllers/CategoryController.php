@@ -9,19 +9,19 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        return Category::withTrashed()->with(['brand.products'])->get();
+        return Category::with(['brand.products'])->get();
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string',
+            'name' => 'required|string|unique:categories,name',
             'parent_id' => 'nullable|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
         ]);
         
         $category = Category::create($validated);
-        return response()->json(['success'=>true, 'id'=>$category->id], 201);
+        return response()->json(['success' => true, 'id' => $category->id, 'category' => $category->load(['brand.products'])], 201);
     }
 
     public function show($id)
@@ -38,14 +38,21 @@ class CategoryController extends Controller
             'parent_id' => 'nullable|exists:categories,id',
         ]);
         $category->update($validated);
-        return response()->json($category->load(['parent', 'children', 'products']));
+        return response()->json([
+            'success' => true,
+            'category' => $category->load(['parent', 'children', 'products'])
+        ]);
     }
 
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
+        
+        // Dissociate products before category deletion/trash
+        $category->products()->update(['category_id' => null]);
+        
         $category->delete();
-        return response()->json(['success' => true, 'message' => 'Category moved to trash']);
+        return response()->json(['success' => true, 'message' => 'Category deleted. Products have been unshelved for re-assignment.']);
     }
 
     public function restore($id)

@@ -71,11 +71,14 @@ class OrderController extends Controller
             'sales.*.price' => 'required|numeric',
             'order_details' => 'required|array',
             'order_details.full_name' => 'nullable|string',
+            'order_details.email' => 'nullable|email', // Added
             'order_details.phone' => 'required|string',
             'order_details.address' => 'nullable|string',
             'order_details.notes' => 'nullable|string',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
+            'delivery_method' => 'nullable|string',
+            'pickup_station' => 'nullable|string',
         ]);
 
         $token = $request->bearerToken();
@@ -92,12 +95,16 @@ class OrderController extends Controller
             'user_id' => $data['user_id'] ?? null,
             'total' => $data['total'],
             'payment_method' => $data['payment_method'],
+            'delivery_method' => $data['delivery_method'], // Corrected
+            'pickup_station' => $data['pickup_station'],  // Corrected
+            'expected_shipping_date' => Order::calculateShippingDate(), 
             'latitude' => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
         ]);
         OrderDetail::create([
             'order_id' => $order->id,
             'full_name' => $data['order_details']['full_name'] ?? '',
+            'email' => $data['order_details']['email'] ?? null, // Added
             'phone' => $data['order_details']['phone'],
             'address' => $data['order_details']['address'],
             'notes' => $data['order_details']['notes'],

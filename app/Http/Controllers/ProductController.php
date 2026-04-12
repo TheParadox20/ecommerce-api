@@ -48,6 +48,16 @@ class ProductController extends Controller
             $products->where('name', 'like', '%' . $request->search . '%');
         }
 
+        // 🏷️ Filter by offers (discounted products)
+        if ($request->boolean('offers')) {
+            $products->where(function ($query) {
+                $query->where('discount', '>', 0)
+                    ->orWhereHas('productVariations', function ($q) {
+                        $q->where('discount', '>', 0);
+                    });
+            });
+        }
+
         // 💰 Price range filter
         if ($request->filled('min_price')) {
             $products->where('price', '>=', $request->min_price);
@@ -230,8 +240,7 @@ class ProductController extends Controller
             
             if (isset($validated['brand'])) {
                 $brand = \App\Models\Brand::firstOrCreate([
-                    'name' => $validated['brand'],
-                    'category_id' => $validated['category_id'] ?? null
+                    'name' => $validated['brand']
                 ]);
                 $validated['brand_id'] = $brand->id;
                 unset($validated['brand']);

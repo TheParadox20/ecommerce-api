@@ -11,7 +11,11 @@ class BannerController extends Controller
     public function index()
     {
         try {
-            $banners = HomepageBanner::where('is_active', true)->orderBy('order', 'asc')->get();
+            $page = request()->query('page', 'homepage');
+            $banners = HomepageBanner::where('page', $page)
+                ->where('is_active', true)
+                ->orderBy('order', 'asc')
+                ->get();
             return response()->json([
                 'success' => true,
                 'data' => $banners
@@ -23,21 +27,30 @@ class BannerController extends Controller
 
     public function adminIndex()
     {
-        return HomepageBanner::orderBy('order', 'asc')->get();
+        $page = request()->query('page', 'homepage');
+        return HomepageBanner::where('page', $page)->orderBy('order', 'asc')->get();
     }
 
     public function store(Request $request)
     {
         try {
             $validated = $request->validate([
-                'image' => 'required|string',
+                'image' => 'required', // Can be a file or a string path
+                'page' => 'required|string',
                 'title' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
                 'link_text' => 'nullable|string|max:100',
                 'link_url' => 'nullable|string|max:255',
-                'order' => 'integer',
-                'is_active' => 'boolean'
+                'order' => 'nullable|integer',
+                'is_active' => 'nullable|boolean'
             ]);
+
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $name = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+                $file->move(public_path('storage/banners'), $name);
+                $validated['image'] = url('storage/banners/' . $name);
+            }
 
             $banner = HomepageBanner::create($validated);
             return response()->json(['success' => true, 'data' => $banner], 201);
@@ -51,14 +64,34 @@ class BannerController extends Controller
         try {
             $banner = HomepageBanner::findOrFail($id);
             $validated = $request->validate([
-                'image' => 'sometimes|required|string',
+                'image' => 'sometimes|required',
+                'page' => 'sometimes|string',
                 'title' => 'nullable|string|max:255',
                 'description' => 'nullable|string',
                 'link_text' => 'nullable|string|max:100',
                 'link_url' => 'nullable|string|max:255',
-                'order' => 'integer',
-                'is_active' => 'boolean'
+                'order' => 'nullable|integer',
+                'is_active' => 'nullable|boolean'
             ]);
+
+            if ($request->hasFile('image')) {
+                // Delete old image if it exists and is a local storage path
+                if ($banner->image && str_contains($banner->image, url('storage/banners'))) {
+                    try {
+                        $oldPath = str_replace(url(''), public_path(), $banner->image);
+                        if (file_exists($oldPath)) {
+                            unlink($oldPath);
+                        }
+                    } catch (Exception $e) {
+                        \Log::error('Failed to delete old banner image: ' . $e->getMessage());
+                    }
+                }
+
+                $file = $request->file('image');
+                $name = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
+                $file->move(public_path('storage/banners'), $name);
+                $validated['image'] = url('storage/banners/' . $name);
+            }
 
             $banner->update($validated);
             return response()->json(['success' => true, 'data' => $banner]);

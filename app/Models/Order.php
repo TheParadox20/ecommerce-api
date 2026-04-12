@@ -20,6 +20,9 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'payment_reference',
+        'delivery_method',
+        'pickup_station',
+        'expected_shipping_date',
         'latitude',
         'longitude',
         'shipment_id',
@@ -27,6 +30,23 @@ class Order extends Model
         'sales',
         'order_details',
     ];
+
+    /**
+     * Calculate the expected shipping date based on the 10:00 AM EAT cutoff.
+     */
+    public static function calculateShippingDate($timestamp = null)
+    {
+        $time = $timestamp ? Carbon::parse($timestamp) : now();
+        $time->setTimezone('Africa/Nairobi');
+
+        // If it's before 10:00 AM, ship same day.
+        if ($time->hour < 10) {
+            return $time->toDateString();
+        }
+
+        // If it's 10:00 AM or later, ship the next day.
+        return $time->addDay()->toDateString();
+    }
 
     protected static function booted(): void
     {

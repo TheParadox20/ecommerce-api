@@ -34,9 +34,19 @@ class TestimonialController extends Controller
                 'role' => 'nullable|string|max:255',
                 'comment' => 'required|string',
                 'rating' => 'required|integer|min:1|max:5',
-                'image' => 'nullable|string',
-                'is_active' => 'boolean'
+                'image' => 'nullable', // Can be file or string
+                'is_active' => 'nullable|boolean'
             ]);
+
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $destinationPath = public_path("storage/testimonials");
+                if (!file_exists($destinationPath)) mkdir($destinationPath, 0755, true);
+
+                $name = time() . '_' . str_replace(' ', '_', $validated['name']) . '.' . $file->getClientOriginalExtension();
+                $file->move($destinationPath, $name);
+                $validated['image'] = url("storage/testimonials/" . $name);
+            }
 
             $testimonial = Testimonial::create($validated);
             return response()->json(['success' => true, 'data' => $testimonial], 201);
@@ -54,9 +64,25 @@ class TestimonialController extends Controller
                 'role' => 'nullable|string|max:255',
                 'comment' => 'sometimes|required|string',
                 'rating' => 'sometimes|integer|min:1|max:5',
-                'image' => 'nullable|string',
-                'is_active' => 'boolean'
+                'image' => 'nullable',
+                'is_active' => 'nullable|boolean'
             ]);
+
+            if ($request->hasFile('image')) {
+                // Delete old image if it exists and is local
+                if ($testimonial->image && str_contains($testimonial->image, url('storage/testimonials'))) {
+                    $oldPath = str_replace(url(''), public_path(), $testimonial->image);
+                    if (file_exists($oldPath)) @unlink($oldPath);
+                }
+
+                $file = $request->file('image');
+                $destinationPath = public_path("storage/testimonials");
+                if (!file_exists($destinationPath)) mkdir($destinationPath, 0755, true);
+
+                $name = time() . '_' . str_replace(' ', '_', ($validated['name'] ?? $testimonial->name)) . '.' . $file->getClientOriginalExtension();
+                $file->move($destinationPath, $name);
+                $validated['image'] = url("storage/testimonials/" . $name);
+            }
 
             $testimonial->update($validated);
             return response()->json(['success' => true, 'data' => $testimonial]);
@@ -69,6 +95,13 @@ class TestimonialController extends Controller
     {
         try {
             $testimonial = Testimonial::findOrFail($id);
+
+            // Delete image if it exists and is local
+            if ($testimonial->image && str_contains($testimonial->image, url('storage/testimonials'))) {
+                $oldPath = str_replace(url(''), public_path(), $testimonial->image);
+                if (file_exists($oldPath)) @unlink($oldPath);
+            }
+
             $testimonial->delete();
             return response()->json(['success' => true, 'message' => 'Testimonial deleted']);
         } catch (Exception $e) {

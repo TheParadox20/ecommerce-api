@@ -8,6 +8,7 @@ class HomepageBanner extends Model
 {
     protected $fillable = [
         'image',
+        'page',
         'title',
         'description',
         'link_text',
