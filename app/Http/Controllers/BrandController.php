@@ -20,6 +20,8 @@ class BrandController extends Controller
             'description' => 'nullable|string',
             'color_hex' => 'nullable|string|max:7',
             'is_active' => 'nullable|boolean',
+            'facebook_url' => 'nullable|url',
+            'instagram_url' => 'nullable|url',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -48,6 +50,8 @@ class BrandController extends Controller
             'description' => 'nullable|string',
             'color_hex' => 'nullable|string|max:7',
             'is_active' => 'nullable|boolean',
+            'facebook_url' => 'nullable|url',
+            'instagram_url' => 'nullable|url',
         ]);
 
         if ($request->hasFile('logo')) {

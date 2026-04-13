@@ -18,6 +18,8 @@ class Brand extends Model
         'description',
         'color_hex',
         'is_active',
+        'facebook_url',
+        'instagram_url',
     ];
 
     public function products(): HasMany

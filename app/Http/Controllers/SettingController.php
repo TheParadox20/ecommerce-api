@@ -41,9 +41,17 @@ class SettingController extends Controller
             ]);
 
             foreach ($validated['settings'] as $key => $value) {
+                // Check if the value is an uploaded file
+                if ($value instanceof \Illuminate\Http\UploadedFile) {
+                    $path = $value->store('settings', 'public');
+                    $valueStr = '/storage/' . $path;
+                } else {
+                    $valueStr = $value;
+                }
+
                 WebsiteSetting::updateOrCreate(
                     ['key' => $key],
-                    ['value' => $value, 'group' => $validated['group']]
+                    ['value' => $valueStr, 'group' => $validated['group']]
                 );
             }
 
