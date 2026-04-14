@@ -10,7 +10,11 @@ use App\Events\NewOrderPlaced;
 use App\Models\Order;
 use App\Models\Sale;
 use App\Models\OrderDetail;
+use App\Models\Product;
+use App\Models\ProductVariation;
 use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Support\Facades\DB;
+use Exception;
 
 class OrderController extends Controller
 {
@@ -91,36 +95,66 @@ class OrderController extends Controller
             }
         }
 
-        $order = Order::create([
-            'user_id' => $data['user_id'] ?? null,
-            'total' => $data['total'],
-            'payment_method' => $data['payment_method'],
-            'delivery_method' => $data['delivery_method'], // Corrected
-            'pickup_station' => $data['pickup_station'],  // Corrected
-            'expected_shipping_date' => Order::calculateShippingDate(), 
-            'latitude' => $data['latitude'] ?? null,
-            'longitude' => $data['longitude'] ?? null,
-        ]);
-        OrderDetail::create([
-            'order_id' => $order->id,
-            'full_name' => $data['order_details']['full_name'] ?? '',
-            'email' => $data['order_details']['email'] ?? null, // Added
-            'phone' => $data['order_details']['phone'],
-            'address' => $data['order_details']['address'],
-            'notes' => $data['order_details']['notes'],
-        ]);
-        foreach ($data['sales'] as $sale) {
-            Sale::create([
-                'order_id' => $order->id,
-                'product_id' => $sale['id'],
-                'product_variation_id' => $sale['variation'] ?? null,
-                'quantity' => $sale['quantity'],
-                'price' => $sale['price'],
-                'total' => $sale['price'] * $sale['quantity'],
-            ]);
+        try {
+            $order = DB::transaction(function () use ($data) {
+                // Check stock and apply pessimistic locking Before writing records
+                foreach ($data['sales'] as $sale) {
+                    if (!empty($sale['variation'])) {
+                        $variation = ProductVariation::where('id', $sale['variation'])->lockForUpdate()->first();
+                        if (!$variation || $variation->stock < $sale['quantity']) {
+                            throw new Exception("Insufficient stock for product variation. Requested: {$sale['quantity']}, Available: " . ($variation ? $variation->stock : 0));
+                        }
+                        $variation->decrement('stock', $sale['quantity']);
+                    } else {
+                        $product = Product::where('id', $sale['id'])->lockForUpdate()->first();
+                        if (!$product || $product->stock < $sale['quantity']) {
+                            throw new Exception("Insufficient stock for product. Requested: {$sale['quantity']}, Available: " . ($product ? $product->stock : 0));
+                        }
+                        $product->decrement('stock', $sale['quantity']);
+                    }
+                }
+
+                $order = Order::create([
+                    'user_id' => $data['user_id'] ?? null,
+                    'total' => $data['total'],
+                    'payment_method' => $data['payment_method'],
+                    'delivery_method' => $data['delivery_method'], // Corrected
+                    'pickup_station' => $data['pickup_station'],  // Corrected
+                    'expected_shipping_date' => Order::calculateShippingDate(), 
+                    'latitude' => $data['latitude'] ?? null,
+                    'longitude' => $data['longitude'] ?? null,
+                ]);
+
+                OrderDetail::create([
+                    'order_id' => $order->id,
+                    'full_name' => $data['order_details']['full_name'] ?? '',
+                    'email' => $data['order_details']['email'] ?? null, // Added
+                    'phone' => $data['order_details']['phone'],
+                    'address' => $data['order_details']['address'],
+                    'notes' => $data['order_details']['notes'],
+                ]);
+
+                foreach ($data['sales'] as $sale) {
+                    Sale::create([
+                        'order_id' => $order->id,
+                        'product_id' => $sale['id'],
+                        'product_variation_id' => $sale['variation'] ?? null,
+                        'quantity' => $sale['quantity'],
+                        'price' => $sale['price'],
+                        'total' => $sale['price'] * $sale['quantity'],
+                    ]);
+                }
+
+                return $order;
+            });
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
         }
 
-        // NewOrderPlaced::dispatch($order);
+        NewOrderPlaced::dispatch($order);
 
         return response()->json([
             'success' => true,
