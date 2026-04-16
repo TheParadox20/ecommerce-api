@@ -110,19 +110,22 @@ class ProductController extends Controller
         try {
             DB::beginTransaction();
 
-            if (isset($validated['category'])) {
-                $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
-                $validated['category_id'] = $category->id;
-                unset($validated['category']);
-            }
-
             if (!empty($validated['brand'])) {
                 $brand = \App\Models\Brand::firstOrCreate([
-                    'name' => $validated['brand'],
-                    'category_id' => $validated['category_id'] ?? null
+                    'name' => $validated['brand']
                 ]);
                 $validated['brand_id'] = $brand->id;
                 unset($validated['brand']);
+            }
+
+            if (isset($validated['category'])) {
+                $categoryData = ['name' => $validated['category']];
+                if (isset($validated['brand_id'])) {
+                    $categoryData['brand_id'] = $validated['brand_id'];
+                }
+                $category = \App\Models\Category::firstOrCreate($categoryData);
+                $validated['category_id'] = $category->id;
+                unset($validated['category']);
             }
 
             // Generate slug automatically
@@ -232,18 +235,24 @@ class ProductController extends Controller
         try {
             DB::beginTransaction();
 
-            if (isset($validated['category'])) {
-                $category = \App\Models\Category::firstOrCreate(['name' => $validated['category']]);
-                $validated['category_id'] = $category->id;
-                unset($validated['category']);
-            }
-            
             if (isset($validated['brand'])) {
                 $brand = \App\Models\Brand::firstOrCreate([
                     'name' => $validated['brand']
                 ]);
                 $validated['brand_id'] = $brand->id;
                 unset($validated['brand']);
+            }
+
+            if (isset($validated['category'])) {
+                $categoryData = ['name' => $validated['category']];
+                if (isset($validated['brand_id'])) {
+                    $categoryData['brand_id'] = $validated['brand_id'];
+                } elseif (isset($product->brand_id)) {
+                    $categoryData['brand_id'] = $product->brand_id;
+                }
+                $category = \App\Models\Category::firstOrCreate($categoryData);
+                $validated['category_id'] = $category->id;
+                unset($validated['category']);
             }
 
             if (isset($validated['name'])) {
