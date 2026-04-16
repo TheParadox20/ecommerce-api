@@ -103,7 +103,7 @@ class ProductController extends Controller
             'brand_id' => 'nullable|exists:brands,id',
             'about' => 'nullable|string',
             'price' => 'nullable|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0|max:100',
+            'discount' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
         ]);
 
@@ -225,7 +225,7 @@ class ProductController extends Controller
             'brand_id' => 'nullable|exists:brands,id',
             'about' => 'nullable|string',
             'price' => 'nullable|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0|max:100',
+            'discount' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
         ]);
 
