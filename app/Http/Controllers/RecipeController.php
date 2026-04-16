@@ -25,9 +25,10 @@ class RecipeController extends Controller
             }
             
             // Product filter
-            if ($request->has('product') && $request->product) {
-                $query->whereHas('products', function($q) use ($request) {
-                    $q->where('products.id', $request->product);
+            $productId = $request->get('product_id') ?: $request->get('product');
+            if ($productId) {
+                $query->whereHas('products', function($q) use ($productId) {
+                    $q->where('products.id', $productId);
                 });
             }
             
