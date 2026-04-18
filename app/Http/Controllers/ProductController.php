@@ -82,9 +82,13 @@ class ProductController extends Controller
             $products->latest();
         }
 
-        // 📄 Pagination (IMPORTANT)
+        // 📄 Pagination — admin can pass per_page to fetch all products at once
+        $perPage = (int) $request->get('per_page', 20);
+        // Cap to prevent abuse; 500 is more than enough for admin listings
+        $perPage = min($perPage, 500);
+
         return response()->json(
-            $products->paginate(20)
+            $products->paginate($perPage)
         );
     }
 
