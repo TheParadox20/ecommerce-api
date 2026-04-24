@@ -22,7 +22,24 @@ class Product extends Model
         'price',
         'discount',
         'stock',
+        'version',
     ];
+
+    public function updateOptimistically(array $attributes, $expectedVersion = null)
+    {
+        $expectedVersion = $expectedVersion ?? $this->version;
+        $attributes['version'] = $expectedVersion + 1;
+
+        $updated = static::where('id', $this->id)
+                         ->where('version', $expectedVersion)
+                         ->update($attributes);
+
+        if (!$updated) {
+            throw new \Exception('Conflict detected: This record has been updated by another user.');
+        }
+        
+        return $this->refresh();
+    }
 
     protected $with = ['category', 'brand'];
 

@@ -19,23 +19,27 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'phone' => $request->phone,
+            'name'     => $request->name,
+            'phone'    => $request->phone,
             'password' => Hash::make($request->password),
+            'role'     => 'user', // legacy field — kept during transition
         ]);
+
+        // Assign Spatie role
+        $user->assignRole('buyer');
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
             'success' => true,
             'message' => 'Account created successfully',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
+            'token'   => $token,
+            'user'    => [
+                'id'    => $user->id,
+                'name'  => $user->name,
                 'phone' => $user->phone,
                 'email' => $user->email,
-                'role' => $user->role,
+                'roles' => $user->getRoleNames(),
             ],
             'balance' => 0,
         ], 201);
@@ -62,14 +66,14 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
+            'token'   => $token,
+            'user'    => [
+                'id'    => $user->id,
+                'name'  => $user->name,
                 'phone' => $user->phone,
                 'email' => $user->email,
-                'role' => $user->role,
-            ]
+                'roles' => $user->getRoleNames(),
+            ],
         ]);
     }
 

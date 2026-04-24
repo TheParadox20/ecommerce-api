@@ -29,7 +29,27 @@ class Order extends Model
         'status',
         'sales',
         'order_details',
+        'voucher_id',
+        'discount_amount',
+        'version',
+        'order_type',
     ];
+
+    public function updateOptimistically(array $attributes, $expectedVersion = null)
+    {
+        $expectedVersion = $expectedVersion ?? $this->version;
+        $attributes['version'] = $expectedVersion + 1;
+
+        $updated = static::where('id', $this->id)
+                         ->where('version', $expectedVersion)
+                         ->update($attributes);
+
+        if (!$updated) {
+            throw new \Exception('Conflict detected: This record has been updated by another user.');
+        }
+        
+        return $this->refresh();
+    }
 
     /**
      * Calculate the expected shipping date based on the 10:00 AM EAT cutoff.
@@ -73,5 +93,18 @@ class Order extends Model
     public function shipment(): BelongsTo
     {
         return $this->belongsTo(Shipment::class);
+    }
+
+    /**
+     * Get the commission associated with the order.
+     */
+    public function commission()
+    {
+        return $this->hasOne(Commission::class);
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(Voucher::class);
     }
 }

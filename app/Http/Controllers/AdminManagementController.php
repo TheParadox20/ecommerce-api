@@ -13,9 +13,20 @@ class AdminManagementController extends Controller
      */
     public function index()
     {
+        // Guard-Agnostic Query: Find any user attached to a role named 'super_admin' or 'admin'
+        // This bypasses Spatie's guard-restricted scoping to ensure total visibility
+        $admins = User::whereHas('roles', function($q) {
+            $q->whereIn('name', ['super_admin', 'admin']);
+        })->get();
+        
+        // Ensure role names are attached for UI badges
+        $admins->each(function ($admin) {
+            $admin->role_names = $admin->getRoleNames();
+        });
+
         return response()->json([
             'success' => true,
-            'admins' => User::whereIn('role', ['admin', 'superadmin', 'super_admin'])->get(),
+            'admins' => $admins,
         ]);
     }
 
@@ -37,10 +48,19 @@ class AdminManagementController extends Controller
 
         $admin = User::create($validated);
 
+        // Assign Spatie role
+        $admin->assignRole('super_admin');
+
         return response()->json([
             'success' => true,
             'message' => 'Admin created successfully.',
-            'admin' => $admin,
+            'admin'   => [
+                'id'    => $admin->id,
+                'name'  => $admin->name,
+                'email' => $admin->email,
+                'phone' => $admin->phone,
+                'roles' => $admin->getRoleNames(),
+            ],
         ], 201);
     }
 

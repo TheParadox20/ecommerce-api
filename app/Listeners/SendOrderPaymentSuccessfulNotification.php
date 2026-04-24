@@ -17,7 +17,7 @@ class SendOrderPaymentSuccessfulNotification
 
         // 1. Send Email with PDF Invoice
         try {
-            $recipients = ['sales@ngwindsongk.com', 'pauline@ngwindsongk.com'];
+            $recipients = ['sales@ngwindsongk.com'];
             if ($order->orderDetail && $order->orderDetail->email) {
                 $recipients[] = $order->orderDetail->email;
             }

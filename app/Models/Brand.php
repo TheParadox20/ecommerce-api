@@ -20,6 +20,8 @@ class Brand extends Model
         'is_active',
         'facebook_url',
         'instagram_url',
+        'min_order_amount',
+        'max_order_amount',
     ];
 
     public function products(): HasMany

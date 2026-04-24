@@ -12,6 +12,9 @@ use App\Models\Sale;
 use App\Models\OrderDetail;
 use App\Models\Product;
 use App\Models\ProductVariation;
+use App\Models\WebsiteSetting;
+use App\Models\Commission;
+use App\Notifications\CommissionEarned;
 use Laravel\Sanctum\PersonalAccessToken;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -85,6 +88,7 @@ class OrderController extends Controller
             'pickup_station' => 'nullable|string',
         ]);
 
+        $orderType = 'b2c';
         $token = $request->bearerToken();
         if ($token) {
             $accessToken = PersonalAccessToken::findToken($token);
@@ -92,11 +96,54 @@ class OrderController extends Controller
 
             if ($user) {
                 $data['user_id'] = $user->id;
+                if ($user->hasRole('distributor')) {
+                    $orderType = 'b2b';
+                }
             }
         }
 
         try {
-            $order = DB::transaction(function () use ($data) {
+            $order = DB::transaction(function () use ($data, $request, $orderType) {
+                // Initialize constraints tracking
+                $brandAmounts = [];
+                $productIds = collect($data['sales'])->pluck('id')->unique()->toArray();
+                $products = \App\Models\Product::with('brand')->whereIn('id', $productIds)->get()->keyBy('id');
+                
+                // Track bulk items and brand limits
+                foreach ($data['sales'] as $sale) {
+                    $product = $products->get($sale['id']);
+                    if (!$product) continue;
+
+                    // Brand Amount Tracking
+                    if ($product->brand_id && $product->brand) {
+                        if (!isset($brandAmounts[$product->brand_id])) {
+                            $brandAmounts[$product->brand_id] = [
+                                'name' => $product->brand->name,
+                                'total_amount' => 0,
+                                'max_amount' => $product->brand->max_order_amount
+                            ];
+                        }
+                        $brandAmounts[$product->brand_id]['total_amount'] += ($sale['price'] * $sale['quantity']);
+                    }
+
+                    // Bulk items MOQ Tracking
+                    if (!empty($sale['variation'])) {
+                        $variation = \App\Models\ProductVariation::find($sale['variation']);
+                        if ($variation && $variation->is_bulk && $variation->min_order_quantity > 0) {
+                            if ($sale['quantity'] < $variation->min_order_quantity) {
+                                throw new Exception("Wholesale minimum order quantity for {$product->name} is {$variation->min_order_quantity}.");
+                            }
+                        }
+                    }
+                }
+
+                // Enforce Brand Max Amounts limits
+                foreach ($brandAmounts as $brandData) {
+                    if ($brandData['max_amount'] > 0 && $brandData['total_amount'] > $brandData['max_amount']) {
+                        throw new Exception("Maximum order limit exceeded for brand {$brandData['name']}. Limit is KES {$brandData['max_amount']}.");
+                    }
+                }
+
                 // Check stock and apply pessimistic locking Before writing records
                 foreach ($data['sales'] as $sale) {
                     if (!empty($sale['variation'])) {
@@ -118,17 +165,18 @@ class OrderController extends Controller
                     'user_id' => $data['user_id'] ?? null,
                     'total' => $data['total'],
                     'payment_method' => $data['payment_method'],
-                    'delivery_method' => $data['delivery_method'], // Corrected
-                    'pickup_station' => $data['pickup_station'],  // Corrected
+                    'delivery_method' => $data['delivery_method'], 
+                    'pickup_station' => $data['pickup_station'],  
                     'expected_shipping_date' => Order::calculateShippingDate(), 
                     'latitude' => $data['latitude'] ?? null,
                     'longitude' => $data['longitude'] ?? null,
+                    'order_type' => $orderType,
                 ]);
 
                 OrderDetail::create([
                     'order_id' => $order->id,
                     'full_name' => $data['order_details']['full_name'] ?? '',
-                    'email' => $data['order_details']['email'] ?? null, // Added
+                    'email' => $data['order_details']['email'] ?? null, 
                     'phone' => $data['order_details']['phone'],
                     'address' => $data['order_details']['address'],
                     'notes' => $data['order_details']['notes'],
@@ -143,6 +191,27 @@ class OrderController extends Controller
                         'price' => $sale['price'],
                         'total' => $sale['price'] * $sale['quantity'],
                     ]);
+                }
+
+                // Handle Influencer Commission
+                if ($request->filled('voucher_id')) {
+                    $order->update(['voucher_id' => $request->voucher_id]);
+                    $order->load('voucher');
+                    
+                    if ($order->voucher && $order->voucher->influencer_id) {
+                        $rate = WebsiteSetting::where('key', 'influencer_commission_rate')->first()?->value ?? 5;
+                        $commissionAmount = ($order->total * ($rate / 100));
+                        
+                        $commission = Commission::create([
+                            'order_id' => $order->id,
+                            'influencer_id' => $order->voucher->influencer_id,
+                            'amount' => $commissionAmount,
+                            'status' => 'pending',
+                        ]);
+
+                        // Notify Influencer
+                        $order->voucher->influencer->notify(new CommissionEarned($commission));
+                    }
                 }
 
                 return $order;
@@ -198,6 +267,11 @@ class OrderController extends Controller
 
         $order->update($data);
 
+        // If order is completed, mark commission as earned
+        if ($order->status === 'completed' && $order->commission) {
+            $order->commission->update(['status' => 'earned']);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Order updated successfully',
@@ -221,6 +295,10 @@ class OrderController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->filled('order_type')) {
+            $query->where('order_type', $request->order_type);
         }
 
         if ($request->filled('user_id')) {

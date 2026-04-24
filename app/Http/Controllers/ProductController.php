@@ -24,17 +24,17 @@ class ProductController extends Controller
             'brand'
         ]);
 
-        // 🔎 Filter by category
+        // 🔎 Filter by category (case-insensitive)
         if ($request->filled('category')) {
             $products->whereHas('category', function ($query) use ($request) {
-                $query->where('name', $request->category);
+                $query->whereRaw('LOWER(name) = ?', [strtolower($request->category)]);
             });
         }
 
-        // 🔎 Filter by brand
+        // 🔎 Filter by brand (case-insensitive)
         if ($request->filled('brand')) {
             $products->whereHas('brand', function ($query) use ($request) {
-                $query->where('name', $request->brand);
+                $query->whereRaw('LOWER(name) = ?', [strtolower($request->brand)]);
             });
         }
 
@@ -162,6 +162,9 @@ class ProductController extends Controller
                                     'stock' => $details['stock'] ?? 0,
                                     'discount' => $details['discount'] ?? null,
                                     'image' => $details['image'] ?? null,
+                                    'weight_kg' => $details['weight_kg'] ?? 0,
+                                    'min_order_quantity' => $details['min_order_quantity'] ?? 0,
+                                    'is_bulk' => $details['is_bulk'] ?? false,
                                     'status' => 'active',
                                 ]);
                             }
@@ -234,6 +237,7 @@ class ProductController extends Controller
             'price' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
+            'version' => 'nullable|integer',
         ]);
 
         try {
@@ -263,7 +267,16 @@ class ProductController extends Controller
                 $validated['slug'] = Str::slug($validated['name']);
             }
 
-            $product->update($validated);
+            // Remove version from validated array if present, as updateOptimistically handles it internally
+            // but we need it for expectedVersion
+            $expectedVersion = $validated['version'] ?? null;
+            unset($validated['version']);
+
+            if ($expectedVersion !== null) {
+                $product->updateOptimistically($validated, $expectedVersion);
+            } else {
+                $product->update($validated);
+            }
 
             // Sync FAQs
             if ($request->has('faqs') && is_array($request->input('faqs'))) {
@@ -299,6 +312,9 @@ class ProductController extends Controller
                                         'stock' => $details['stock'] ?? 0,
                                         'discount' => $details['discount'] ?? null,
                                         'image' => $details['image'] ?? null,
+                                        'weight_kg' => $details['weight_kg'] ?? 0,
+                                        'min_order_quantity' => $details['min_order_quantity'] ?? 0,
+                                        'is_bulk' => $details['is_bulk'] ?? false,
                                         'status' => 'active',
                                     ]
                                 );
@@ -330,11 +346,14 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Product update failed: ' . $e->getMessage());
+            
+            $statusCode = str_contains($e->getMessage(), 'Conflict detected') ? 409 : 500;
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update product.',
+                'message' => $statusCode === 409 ? 'Conflict detected: The product was updated by someone else.' : 'Failed to update product.',
                 'error' => $e->getMessage()
-            ], 500);
+            ], $statusCode);
         }
     }
 

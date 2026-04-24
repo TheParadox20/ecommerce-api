@@ -21,6 +21,9 @@ class ProductVariation extends Model
         'discount',
         'status',
         'image',
+        'weight_kg',
+        'min_order_quantity',
+        'is_bulk',
     ];
 
     public function product(): BelongsTo
