@@ -73,7 +73,7 @@
                         @else
                             <div class="value">
                                 Method: Standard Delivery<br>
-                                @if($order->delivery_zone)
+                                @if(!empty($order->delivery_zone))
                                     Zone: {{ $order->delivery_zone }}<br>
                                     @php
                                         $location = \App\Models\Location::where('name', $order->delivery_zone)->first();
@@ -82,7 +82,9 @@
                                         Sacco / Rider: {{ $location->sacco_rider }}<br>
                                     @endif
                                 @endif
-                                Est. Shipment: {{ \Carbon\Carbon::parse($order->expected_shipping_date)->format('M d, Y') }}
+                                @if($order->expected_shipping_date)
+                                    Est. Shipment: {{ \Illuminate\Support\Carbon::parse($order->expected_shipping_date)->format('M d, Y') }}
+                                @endif
                             </div>
                         @endif
                     </td>
@@ -103,7 +105,7 @@
                 @foreach($order->sales as $sale)
                 <tr>
                     <td>
-                        <div style="font-weight: bold;">{{ $sale->product->name }}</div>
+                        <div style="font-weight: bold;">{{ optional($sale->product)->name ?? 'Product' }}</div>
                         <div style="font-size: 11px; color: #888;">
                             @if($sale->productVariation)
                                 {{ $sale->productVariation->attribute_name }}: {{ $sale->productVariation->attribute_value }}
@@ -123,11 +125,11 @@
         <div class="summary-section">
             <div class="summary-row">
                 <span class="summary-label">Subtotal:</span>
-                <span class="summary-value">{{ number_format($order->total - ($order->shipping ?? 0), 2) }} KES</span>
+                <span class="summary-value">{{ number_format($order->total - (float)($order->shipping ?? 0), 2) }} KES</span>
             </div>
             <div class="summary-row">
                 <span class="summary-label">Shipping:</span>
-                <span class="summary-value">{{ number_format($order->shipping ?? 0, 2) }} KES</span>
+                <span class="summary-value">{{ number_format((float)($order->shipping ?? 0), 2) }} KES</span>
             </div>
             <div class="total-row">
                 <span class="total-label">Total:</span>
@@ -137,7 +139,9 @@
 
         <div class="footer">
             Thank you for your business. For any queries, please contact us at sales@ngwindsongk.com<br>
-            Expected Shipment Date is {{ \Carbon\Carbon::parse($order->expected_shipping_date)->format('l, M d, Y') }}.
+            @if($order->expected_shipping_date)
+                Expected Shipment Date is {{ \Illuminate\Support\Carbon::parse($order->expected_shipping_date)->format('l, M d, Y') }}.
+            @endif
         </div>
     </div>
 </body>
