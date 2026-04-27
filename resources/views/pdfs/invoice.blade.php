@@ -54,11 +54,11 @@
                 <tr>
                     <td class="details-col">
                         <div class="label">Billed To</div>
-                        <div class="value">{{ $order->orderDetail->full_name }}</div>
+                        <div class="value">{{ $order->orderDetail->full_name ?? 'N/A' }}</div>
                         <div class="value" style="font-weight: normal; font-size: 12px; color: #666;">
-                            {{ $order->orderDetail->phone }}<br>
-                            {{ $order->orderDetail->email }}<br>
-                            {{ $order->orderDetail->address }}
+                            {{ $order->orderDetail->phone ?? '' }}<br>
+                            {{ $order->orderDetail->email ?? '' }}<br>
+                            {{ $order->orderDetail->address ?? '' }}
                         </div>
                     </td>
                     <td class="details-col" style="padding-left: 40px;">
@@ -67,12 +67,21 @@
                         <div class="label">Fulfillment Details</div>
                         @if($order->delivery_method === 'pickup')
                             <div class="value" style="color: #6D31ED;">
-                                Pickup Station: {{ $order->pickup_station }}<br>
-                                Collection Date: {{ \Carbon\Carbon::parse($order->expected_shipping_date)->format('l, M d, Y') }}
+                                Pickup Station: {{ $order->pickup_station ?? 'N/A' }}<br>
+                                Collection Date: {{ $order->expected_shipping_date ? \Carbon\Carbon::parse($order->expected_shipping_date)->format('l, M d, Y') : 'N/A' }}
                             </div>
                         @else
                             <div class="value">
                                 Method: Standard Delivery<br>
+                                @if($order->delivery_zone)
+                                    Zone: {{ $order->delivery_zone }}<br>
+                                    @php
+                                        $location = \App\Models\Location::where('name', $order->delivery_zone)->first();
+                                    @endphp
+                                    @if($location && $location->sacco_rider)
+                                        Sacco / Rider: {{ $location->sacco_rider }}<br>
+                                    @endif
+                                @endif
                                 Est. Shipment: {{ \Carbon\Carbon::parse($order->expected_shipping_date)->format('M d, Y') }}
                             </div>
                         @endif
@@ -95,7 +104,13 @@
                 <tr>
                     <td>
                         <div style="font-weight: bold;">{{ $sale->product->name }}</div>
-                        <div style="font-size: 11px; color: #888;">{{ $sale->productVariation->name ?? 'Standard Size' }}</div>
+                        <div style="font-size: 11px; color: #888;">
+                            @if($sale->productVariation)
+                                {{ $sale->productVariation->attribute_name }}: {{ $sale->productVariation->attribute_value }}
+                            @else
+                                Standard Size
+                            @endif
+                        </div>
                     </td>
                     <td style="text-align: center;">{{ $sale->quantity }}</td>
                     <td style="text-align: right;">{{ number_format($sale->price, 2) }}</td>

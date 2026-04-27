@@ -27,6 +27,7 @@ use App\Http\Controllers\NavMenuController;
 use App\Http\Controllers\DistributorInviteController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\Admin\ApplicationController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\VoucherController;
@@ -170,6 +171,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin'])->group(function ()
 
     // Admin Setting Routes
     Route::apiResource('/admin/settings', SettingController::class)->only(['update']);
+    Route::apiResource('/admin/locations', LocationController::class)->except(['show']);
 
     // Admin Comment Moderation
     Route::get('/admin/comments', [BlogCommentController::class, 'index']);

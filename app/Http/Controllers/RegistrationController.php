@@ -23,10 +23,11 @@ class RegistrationController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'business_name' => 'required|string|max:255',
             'location' => 'required|string|max:255',
-            'tax_id' => 'nullable|string|max:50',
+            'tax_id' => 'required|string|max:50',
             'brands_interested' => 'nullable|array',
             'brands_interested.*' => 'string',
-            'products_interested' => 'nullable|string',
+            'products_interested' => 'nullable|array',
+            'products_interested.*' => 'string',
             'estimated_quantity' => 'nullable|string',
         ]);
 
@@ -42,7 +43,7 @@ class RegistrationController extends Controller
                 'location' => $validated['location'],
                 'tax_id' => $validated['tax_id'] ?? null,
                 'brands_interested' => $validated['brands_interested'] ?? [],
-                'products_interested' => $validated['products_interested'] ?? null,
+                'products_interested' => $validated['products_interested'] ?? [],
                 'estimated_quantity' => $validated['estimated_quantity'] ?? null,
                 'applied_at' => now()->toDateTimeString(),
             ],
@@ -71,7 +72,11 @@ class RegistrationController extends Controller
             'phone' => 'required|string|unique:users,phone',
             'password' => 'required|string|min:8|confirmed',
             'social_handles' => 'required|array|min:1',
-            'niche' => 'nullable|string|max:255',
+            'niche' => 'nullable',
+            'brands_interested' => 'nullable|array',
+            'brands_interested.*' => 'string',
+            'products_interested' => 'nullable|array',
+            'products_interested.*' => 'string',
         ]);
 
         $user = User::create([
@@ -84,6 +89,8 @@ class RegistrationController extends Controller
             'profile_details' => [
                 'social_handles' => $validated['social_handles'],
                 'niche' => $validated['niche'] ?? null,
+                'brands_interested' => $validated['brands_interested'] ?? [],
+                'products_interested' => $validated['products_interested'] ?? [],
                 'applied_at' => now()->toDateTimeString(),
             ],
         ]);

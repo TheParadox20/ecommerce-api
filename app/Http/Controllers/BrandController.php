@@ -9,7 +9,7 @@ class BrandController extends Controller
 {
     public function index()
     {
-        return Brand::with(['categories'])->get();
+        return Brand::with(['categories'])->withCount('products')->get();
     }
 
     public function store(Request $request)
@@ -37,7 +37,7 @@ class BrandController extends Controller
 
     public function show($id)
     {
-        $brand = Brand::with(['categories'])->findOrFail($id);
+        $brand = Brand::with(['categories'])->withCount('products')->findOrFail($id);
         return response()->json($brand);
     }
 
@@ -76,7 +76,7 @@ class BrandController extends Controller
         $brand->update($validated);
         return response()->json([
             'success' => true,
-            'brand' => $brand->load(['categories'])
+            'brand' => $brand->load(['categories'])->loadCount('products')
         ]);
     }
 

@@ -33,6 +33,8 @@ class Order extends Model
         'discount_amount',
         'version',
         'order_type',
+        'shipping',
+        'delivery_zone',
     ];
 
     public function updateOptimistically(array $attributes, $expectedVersion = null)

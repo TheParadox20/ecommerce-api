@@ -86,6 +86,8 @@ class OrderController extends Controller
             'longitude' => 'nullable|numeric',
             'delivery_method' => 'nullable|string',
             'pickup_station' => 'nullable|string',
+            'shipping' => 'nullable|numeric',
+            'delivery_zone' => 'nullable|string',
         ]);
 
         $orderType = 'b2c';
@@ -165,12 +167,14 @@ class OrderController extends Controller
                     'user_id' => $data['user_id'] ?? null,
                     'total' => $data['total'],
                     'payment_method' => $data['payment_method'],
-                    'delivery_method' => $data['delivery_method'], 
-                    'pickup_station' => $data['pickup_station'],  
+                    'delivery_method' => $data['delivery_method'] ?? null,
+                    'pickup_station' => $data['pickup_station'] ?? null,
                     'expected_shipping_date' => Order::calculateShippingDate(), 
                     'latitude' => $data['latitude'] ?? null,
                     'longitude' => $data['longitude'] ?? null,
                     'order_type' => $orderType,
+                    'shipping' => $data['shipping'] ?? 0,
+                    'delivery_zone' => $data['delivery_zone'] ?? null,
                 ]);
 
                 OrderDetail::create([

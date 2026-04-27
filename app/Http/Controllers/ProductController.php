@@ -24,18 +24,28 @@ class ProductController extends Controller
             'brand'
         ]);
 
-        // 🔎 Filter by category (case-insensitive)
-        if ($request->filled('category')) {
-            $products->whereHas('category', function ($query) use ($request) {
-                $query->whereRaw('LOWER(name) = ?', [strtolower($request->category)]);
+        // 🔎 Filter by category or brand
+        if ($request->filled('category') && $request->filled('brand') && strtolower($request->category) === strtolower($request->brand)) {
+            $slugValue = strtolower($request->category);
+            $products->where(function($q) use ($slugValue) {
+                $q->whereHas('category', function ($query) use ($slugValue) {
+                    $query->whereRaw('LOWER(name) = ?', [$slugValue]);
+                })->orWhereHas('brand', function ($query) use ($slugValue) {
+                    $query->whereRaw('LOWER(name) = ?', [$slugValue]);
+                });
             });
-        }
+        } else {
+            if ($request->filled('category')) {
+                $products->whereHas('category', function ($query) use ($request) {
+                    $query->whereRaw('LOWER(name) = ?', [strtolower($request->category)]);
+                });
+            }
 
-        // 🔎 Filter by brand (case-insensitive)
-        if ($request->filled('brand')) {
-            $products->whereHas('brand', function ($query) use ($request) {
-                $query->whereRaw('LOWER(name) = ?', [strtolower($request->brand)]);
-            });
+            if ($request->filled('brand')) {
+                $products->whereHas('brand', function ($query) use ($request) {
+                    $query->whereRaw('LOWER(name) = ?', [strtolower($request->brand)]);
+                });
+            }
         }
 
         // 🔎 Exclude a product by name (useful for "related products")
