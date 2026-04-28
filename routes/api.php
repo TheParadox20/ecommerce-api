@@ -110,15 +110,17 @@ Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
 
 Route::middleware(['auth:sanctum', 'role:super_admin|admin'])->group(function () {
+    Route::get('/admin/admins', [AdminManagementController::class, 'index']);
+    Route::get('/admin/users', [UserManagementController::class, 'index']);
+
     // Super Admin Only: Admin & User management
     Route::middleware('role:super_admin')->group(function () {
         Route::get('/admins', [AdminManagementController::class, 'index']);
-        Route::get('/admin/admins', [AdminManagementController::class, 'index']);
         Route::post('/admins', [AdminManagementController::class, 'store']);
         Route::put('/admin/admins/{id}/password', [AdminManagementController::class, 'updatePassword']);
         Route::delete('/admin/admins/{id}', [AdminManagementController::class, 'destroy']);
         
-        Route::get('/admin/users', [UserManagementController::class, 'index']);
+
         Route::post('/admin/users/{id}/deactivate', [UserManagementController::class, 'deactivate']);
         Route::post('/admin/users/{id}/reactivate', [UserManagementController::class, 'reactivate']);
         Route::post('/admin/users/{id}/assign-role', [UserManagementController::class, 'assignRole']);
