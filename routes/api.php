@@ -50,6 +50,8 @@ Route::middleware('auth:sanctum')->group(function () {
             ])
         ]);
     });
+
+    Route::get('/orders/{slug}/invoice', [App\Http\Controllers\PDFController::class, 'downloadInvoice']);
 });
 
 // Onboarding: "Show Interest" Registration (Public)
@@ -202,7 +204,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin'])->group(function ()
     // Reporting & PDF Routes
     Route::get('/export/sales', [App\Http\Controllers\ExportController::class, 'sales']);
     Route::get('/export/deliveries', [App\Http\Controllers\ExportController::class, 'deliveries']);
-    Route::get('/orders/{slug}/invoice', [App\Http\Controllers\PDFController::class, 'downloadInvoice']);
+
 });
 
 // Distributor Specific Routes
