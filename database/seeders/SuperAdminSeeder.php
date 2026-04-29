@@ -26,9 +26,9 @@ class SuperAdminSeeder extends Seeder
             ]
         );
 
-        // Assign Spatie Role
-        if (!$admin->hasRole('super_admin')) {
-            $admin->assignRole('super_admin');
+        // Assign Spatie Role (Explicitly specifying sanctum guard)
+        if (!$admin->hasRole('super_admin', 'sanctum')) {
+            $admin->assignRole('super_admin', 'sanctum');
         }
 
         $this->command->info('✅ Super Admin created successfully.');
