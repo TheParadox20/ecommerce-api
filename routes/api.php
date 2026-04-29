@@ -246,3 +246,11 @@ Route::get('/run-seeder', function (Request $request) {
     Artisan::call('db:seed', ['--class' => $class, '--force' => true]);
     return Artisan::output();
 });
+
+Route::get('/clear-cache', function () {
+    Artisan::call('config:clear');
+    Artisan::call('route:clear');
+    Artisan::call('view:clear');
+    Artisan::call('cache:clear');
+    return "✅ All caches cleared successfully!\n\n" . Artisan::output();
+});
