@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\InfluencerController;
+use App\Http\Controllers\PageViewController;
 
 Route::get('/nav-menus', [NavMenuController::class, 'index']);
 
@@ -57,6 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
 // Onboarding: "Show Interest" Registration (Public)
 Route::post('/register/distributor', [RegistrationController::class, 'distributorSignup']);
 Route::post('/register/influencer', [RegistrationController::class, 'influencerSignup']);
+
+// Analytics
+Route::post('/pageviews', [PageViewController::class, 'store'])->middleware('throttle:60,1');
 
 // Voucher validation (public)
 Route::post('/vouchers/validate', [VoucherController::class, 'validateCode']);
@@ -109,7 +113,7 @@ Route::apiResource('messages', MessagesController::class);
 Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
 
-Route::middleware(['auth:sanctum', 'role:super_admin|admin'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(function () {
     Route::get('/admin/admins', [AdminManagementController::class, 'index']);
     Route::get('/admin/users', [UserManagementController::class, 'index']);
 
@@ -150,6 +154,9 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin'])->group(function ()
         // Voucher Management
         Route::apiResource('/admin/vouchers', VoucherController::class);
     });
+
+    // Analytics Stats (All Admins)
+    Route::get('/admin/pageviews/stats', [PageViewController::class, 'stats']);
 
     // General Admin Routes (Content Management)
     // Admin Recipe Routes
