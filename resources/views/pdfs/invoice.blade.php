@@ -32,8 +32,11 @@
     <div class="invoice-container">
         <table style="width: 100%;">
             <tr>
-                <td>
+{{-- <td>
                     <img src="{{ public_path('logo.png') }}" style="width: 180px;" alt="NGWINDSONGK">
+                </td> --}}
+                <td>
+                    <h2 style="color: #6D31ED;">NGWINDSONGK</h2>
                 </td>
                 <td class="invoice-title">
                     <h1>Invoice</h1>
