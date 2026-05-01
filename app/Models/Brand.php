@@ -22,7 +22,10 @@ class Brand extends Model
         'instagram_url',
         'min_order_amount',
         'max_order_amount',
+        'tracking_snippet',
+        'purchase_snippet',
     ];
+
 
     public function products(): HasMany
     {
