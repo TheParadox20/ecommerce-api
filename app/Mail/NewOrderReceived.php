@@ -15,7 +15,9 @@ class NewOrderReceived extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Order $order) {}
+    public function __construct(public Order $order) {
+        $this->order->load(['sales.product', 'sales.productVariation', 'orderDetail']);
+    }
 
     public function envelope(): Envelope
     {

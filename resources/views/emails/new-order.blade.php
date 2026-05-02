@@ -35,36 +35,55 @@
                     <!-- Customer Details -->
                     <tr>
                         <td style="padding: 28px 40px 0;">
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f5ff; border-radius: 12px; border-left: 4px solid #6D31ED;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f5ff; border-radius: 12px;">
                                 <tr>
                                     <td style="padding: 24px;">
-                                        <p style="color: #6D31ED; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 16px;">Customer Details</p>
                                         @if($order->orderDetail)
                                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-                                            @if($order->orderDetail->full_name)
                                             <tr>
-                                                <td style="padding-bottom: 10px; width: 100px; color: #94a3b8; font-size: 13px; vertical-align: top;">Name</td>
-                                                <td style="padding-bottom: 10px; color: #1e293b; font-size: 14px; font-weight: 500;">{{ $order->orderDetail->full_name }}</td>
-                                            </tr>
-                                            @endif
-                                            <tr>
-                                                <td style="padding-bottom: 10px; width: 100px; color: #94a3b8; font-size: 13px; vertical-align: top;">Phone</td>
-                                                <td style="padding-bottom: 10px; color: #1e293b; font-size: 14px; font-weight: 500;">
-                                                    <a href="tel:{{ $order->orderDetail->phone }}" style="color: #15ABFF; text-decoration: none;">{{ $order->orderDetail->phone }}</a>
+                                                <td style="padding-bottom: 24px; vertical-align: top; width: 50%;">
+                                                    <p style="color: #6D31ED; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px;">Customer Details</p>
+                                                    <table role="presentation" cellpadding="0" cellspacing="0">
+                                                        @if($order->orderDetail->full_name)
+                                                        <tr>
+                                                            <td style="padding-bottom: 6px; width: 60px; color: #94a3b8; font-size: 12px;">Name</td>
+                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->orderDetail->full_name }}</td>
+                                                        </tr>
+                                                        @endif
+                                                        <tr>
+                                                            <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Phone</td>
+                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->orderDetail->phone }}</td>
+                                                        </tr>
+                                                        @if($order->orderDetail->address)
+                                                        <tr>
+                                                            <td style="color: #94a3b8; font-size: 12px;">Address</td>
+                                                            <td style="color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->orderDetail->address }}</td>
+                                                        </tr>
+                                                        @endif
+                                                    </table>
+                                                </td>
+                                                <td style="padding-bottom: 24px; vertical-align: top; width: 50%; padding-left: 20px;">
+                                                    <p style="color: #6D31ED; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px;">Shipping Details</p>
+                                                    <table role="presentation" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td style="padding-bottom: 6px; width: 80px; color: #94a3b8; font-size: 12px;">Method</td>
+                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ ucfirst($order->delivery_method ?? 'Standard') }}</td>
+                                                        </tr>
+                                                        @if($order->delivery_zone)
+                                                        <tr>
+                                                            <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Zone</td>
+                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->delivery_zone }}</td>
+                                                        </tr>
+                                                        @endif
+                                                        @if($order->expected_shipping_date)
+                                                        <tr>
+                                                            <td style="color: #94a3b8; font-size: 12px;">Est. Date</td>
+                                                            <td style="color: #6D31ED; font-size: 13px; font-weight: 700;">{{ \Illuminate\Support\Carbon::parse($order->expected_shipping_date)->format('M d, Y') }}</td>
+                                                        </tr>
+                                                        @endif
+                                                    </table>
                                                 </td>
                                             </tr>
-                                            @if($order->orderDetail->address)
-                                            <tr>
-                                                <td style="padding-bottom: 10px; width: 100px; color: #94a3b8; font-size: 13px; vertical-align: top;">Address</td>
-                                                <td style="padding-bottom: 10px; color: #1e293b; font-size: 14px; font-weight: 500;">{{ $order->orderDetail->address }}</td>
-                                            </tr>
-                                            @endif
-                                            @if($order->orderDetail->notes)
-                                            <tr>
-                                                <td style="width: 100px; color: #94a3b8; font-size: 13px; vertical-align: top;">Notes</td>
-                                                <td style="color: #475569; font-size: 14px; font-style: italic;">{{ $order->orderDetail->notes }}</td>
-                                            </tr>
-                                            @endif
                                         </table>
                                         @endif
                                     </td>

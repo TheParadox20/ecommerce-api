@@ -58,15 +58,18 @@ class Order extends Model
      */
     public static function calculateShippingDate($timestamp = null)
     {
-        $time = $timestamp ? Carbon::parse($timestamp) : now();
+        $time = $timestamp ? \Illuminate\Support\Carbon::parse($timestamp) : now();
         $time->setTimezone('Africa/Nairobi');
 
-        // If it's before 10:00 AM, ship same day.
-        if ($time->hour < 10) {
+        // Fetch cutoff from settings, default to 10 AM if not set
+        $cutoffHour = \App\Models\WebsiteSetting::where('key', 'shipping_cutoff_hour')->value('value') ?? 10;
+
+        // If it's before the cutoff hour, ship same day.
+        if ($time->hour < (int)$cutoffHour) {
             return $time->toDateString();
         }
 
-        // If it's 10:00 AM or later, ship the next day.
+        // If it's at or after the cutoff hour, ship the next day.
         return $time->addDay()->toDateString();
     }
 
