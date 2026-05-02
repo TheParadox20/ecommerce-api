@@ -254,3 +254,12 @@ Route::get('/clear-cache', function () {
     Artisan::call('cache:clear');
     return "✅ All caches cleared successfully!\n\n" . Artisan::output();
 });
+
+Route::get('/test-pulse', function() {
+    return response()->json([
+        'message' => 'API routes are working!',
+        'pulse_path' => config('pulse.path'),
+        'telescope_path' => config('telescope.path'),
+        'app_env' => app()->environment(),
+    ]);
+});
