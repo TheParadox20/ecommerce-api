@@ -15,5 +15,8 @@ class PageView extends Model
         'browser',
         'user_id',
         'ip_address',
+        'country',
+        'country_code',
+        'city',
     ];
 }

@@ -6,6 +6,7 @@ use App\Models\PageView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 
 class PageViewController extends Controller
 {
@@ -15,6 +16,7 @@ class PageViewController extends Controller
     public function store(Request $request)
     {
         $userAgent = $request->header('User-Agent');
+        $ip = $request->ip();
         
         // Basic Bot Filtering
         if ($this->isBot($userAgent)) {
@@ -24,6 +26,18 @@ class PageViewController extends Controller
         $deviceType = $this->detectDevice($userAgent);
         $browser = $this->detectBrowser($userAgent);
 
+        // Fetch Location from IP (Free API)
+        $location = ['country' => 'Unknown', 'countryCode' => '??', 'city' => 'Unknown'];
+        try {
+            // We use the full IP for lookup, but then we mask it before saving
+            $response = Http::timeout(2)->get("http://ip-api.com/json/{$ip}?fields=status,country,countryCode,city");
+            if ($response->successful() && $response->json('status') === 'success') {
+                $location = $response->json();
+            }
+        } catch (\Exception $e) {
+            // Silent fail
+        }
+
         PageView::create([
             'path' => $request->input('path'),
             'referrer' => $request->input('referrer'),
@@ -32,7 +46,10 @@ class PageViewController extends Controller
             'device_type' => $deviceType,
             'browser' => $browser,
             'user_id' => auth('sanctum')->id(),
-            'ip_address' => $request->ip(),
+            'ip_address' => $this->maskIp($ip), // Anonymize IP before saving
+            'country' => $location['country'],
+            'country_code' => $location['countryCode'],
+            'city' => $location['city'],
         ]);
 
         return response()->json(['success' => true], 201);
@@ -95,7 +112,16 @@ class PageViewController extends Controller
             ->limit(10)
             ->get();
 
-        // 7. Recent Activity (Last 50 hits)
+        // 8. Top Countries
+        $topCountries = PageView::where('created_at', '>=', $startDate)
+            ->whereNotNull('country')
+            ->select('country', DB::raw('COUNT(*) as count'))
+            ->groupBy('country')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get();
+
+        // 9. Recent Activity (Last 50 hits)
         $recentActivity = PageView::orderByDesc('created_at')
             ->limit(50)
             ->get();
@@ -107,6 +133,7 @@ class PageViewController extends Controller
             'device_breakdown' => $deviceBreakdown,
             'browser_breakdown' => $browserBreakdown,
             'top_referrers' => $topReferrers,
+            'top_countries' => $topCountries,
             'recent_activity' => $recentActivity,
             'period_days' => $days
         ]);
@@ -135,5 +162,16 @@ class PageViewController extends Controller
         if (preg_match('/Opera/i', $ua)) return 'Opera';
         if (preg_match('/Netscape/i', $ua)) return 'Netscape';
         return 'Unknown';
+    }
+
+    private function maskIp($ip)
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return preg_replace('/[0-9]+$/', 'xxx', $ip);
+        }
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return substr($ip, 0, strrpos($ip, ':')) . ':xxxx';
+        }
+        return $ip;
     }
 }
