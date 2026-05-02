@@ -132,6 +132,11 @@ class PageViewController extends Controller
             ->limit(10)
             ->get();
 
+        // 9. Recent Activity (Last 50 hits) - Needed for the Analytics page display
+        $recentActivity = PageView::orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
         return response()->json([
             'summary' => $summary,
             'daily_trends' => $dailyTrends,
