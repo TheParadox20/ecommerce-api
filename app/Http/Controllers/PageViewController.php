@@ -46,7 +46,6 @@ class PageViewController extends Controller
             'device_type' => $deviceType,
             'browser' => $browser,
             'user_id' => auth('sanctum')->id(),
-            'ip_address' => $this->maskIp($ip), // Anonymize IP before saving
             'country' => $location['country'],
             'country_code' => $location['countryCode'],
             'city' => $location['city'],
@@ -162,16 +161,5 @@ class PageViewController extends Controller
         if (preg_match('/Opera/i', $ua)) return 'Opera';
         if (preg_match('/Netscape/i', $ua)) return 'Netscape';
         return 'Unknown';
-    }
-
-    private function maskIp($ip)
-    {
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-            return preg_replace('/[0-9]+$/', 'xxx', $ip);
-        }
-        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-            return substr($ip, 0, strrpos($ip, ':')) . ':xxxx';
-        }
-        return $ip;
     }
 }

@@ -14,7 +14,6 @@ class PageView extends Model
         'device_type',
         'browser',
         'user_id',
-        'ip_address',
         'country',
         'country_code',
         'city',
