@@ -24,6 +24,13 @@ class Product extends Model
         'stock',
         'version',
     ];
+    
+    protected $casts = [
+        'stock' => 'integer',
+        'price' => 'decimal:2',
+        'discount' => 'integer',
+        'version' => 'integer',
+    ];
 
     public function updateOptimistically(array $attributes, $expectedVersion = null)
     {

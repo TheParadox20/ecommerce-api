@@ -26,6 +26,15 @@ class ProductVariation extends Model
         'is_bulk',
     ];
 
+    protected $casts = [
+        'stock' => 'integer',
+        'price' => 'decimal:2',
+        'discount' => 'integer',
+        'weight_kg' => 'decimal:3',
+        'min_order_quantity' => 'integer',
+        'is_bulk' => 'boolean',
+    ];
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
