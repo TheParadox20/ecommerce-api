@@ -8,6 +8,8 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Mail\Mailables\Attachment;
 
 class NewOrderReceived extends Mailable
 {
@@ -27,5 +29,16 @@ class NewOrderReceived extends Mailable
         return new Content(
             view: 'emails.new-order',
         );
+    }
+
+    public function attachments(): array
+    {
+        // Generate PDF on the fly
+        $pdf = Pdf::loadView('pdfs.invoice', ['order' => $this->order->load(['sales.product', 'sales.productVariation', 'orderDetail'])]);
+        
+        return [
+            Attachment::fromData(fn () => $pdf->output(), 'Invoice-'.$this->order->slug.'.pdf')
+                ->withMime('application/pdf'),
+        ];
     }
 }
