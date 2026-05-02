@@ -233,6 +233,7 @@ Route::get('/logistics', [LogisticsController::class, 'index']);
 Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
 //payment related routes
 Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class, 'calculate']);
+Route::get('/locations/counties', [App\Http\Controllers\LocationController::class, 'counties']);
 Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware('idempotent');
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
 //system maintenance routes

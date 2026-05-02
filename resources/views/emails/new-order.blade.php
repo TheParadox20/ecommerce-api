@@ -111,8 +111,6 @@
                                         {{ $sale->product->name ?? 'Product #'.$sale->product_id }}
                                         @if($sale->productVariation)
                                             <br><span style="color: #94a3b8; font-size: 12px;">{{ $sale->productVariation->attribute_name }}: {{ $sale->productVariation->attribute_value }}</span>
-                                        @else
-                                            <br><span style="color: #94a3b8; font-size: 12px;">Standard Size</span>
                                         @endif
                                     </td>
                                     <td style="padding: 12px 16px; color: #334155; font-size: 13px; text-align: center; border-top: 1px solid #f1e8ff;">{{ $sale->quantity }}</td>

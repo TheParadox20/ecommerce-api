@@ -97,4 +97,22 @@ class LocationController extends Controller
             'message' => 'Delivery zone deleted successfully.'
         ]);
     }
+
+    /**
+     * Public endpoint: return all counties with urban centers for checkout zone picker.
+     */
+    public function counties()
+    {
+        $kenyaId = Location::where('name', 'Kenya')->value('id');
+
+        $counties = Location::where('parent_id', $kenyaId)
+            ->with(['children' => fn($q) => $q->orderBy('name')])
+            ->orderBy('name')
+            ->get(['id', 'name', 'delivery_fee', 'parent_id']);
+
+        return response()->json([
+            'success' => true,
+            'data' => $counties,
+        ]);
+    }
 }
