@@ -93,7 +93,7 @@ return [
     */
 
     'middleware' => [
-        'api',
+        'web',
         Authorize::class,
     ],
 
