@@ -91,7 +91,9 @@
                                     <td style="padding: 12px 16px; color: #334155; font-size: 13px; border-top: 1px solid #f1e8ff;">
                                         {{ $sale->product->name ?? 'Product #'.$sale->product_id }}
                                         @if($sale->productVariation)
-                                            <br><span style="color: #94a3b8; font-size: 12px;">{{ $sale->productVariation->name ?? '' }}</span>
+                                            <br><span style="color: #94a3b8; font-size: 12px;">{{ $sale->productVariation->attribute_name }}: {{ $sale->productVariation->attribute_value }}</span>
+                                        @else
+                                            <br><span style="color: #94a3b8; font-size: 12px;">Standard Size</span>
                                         @endif
                                     </td>
                                     <td style="padding: 12px 16px; color: #334155; font-size: 13px; text-align: center; border-top: 1px solid #f1e8ff;">{{ $sale->quantity }}</td>
@@ -100,6 +102,14 @@
                                 </tr>
                                 @endforeach
                                 <!-- Total Row -->
+                                <tr>
+                                    <td colspan="3" style="padding: 14px 16px; font-size: 13px; font-weight: 600; color: #1e293b; text-align: right; border-top: 2px solid #6D31ED;">Subtotal</td>
+                                    <td style="padding: 14px 16px; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right; border-top: 2px solid #6D31ED;">KES {{ number_format($order->total - ($order->shipping ?? 0)) }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3" style="padding: 8px 16px 14px; font-size: 13px; font-weight: 600; color: #1e293b; text-align: right;">Shipping</td>
+                                    <td style="padding: 8px 16px 14px; font-size: 14px; font-weight: 600; color: #1e293b; text-align: right;">KES {{ number_format($order->shipping ?? 0) }}</td>
+                                </tr>
                                 <tr>
                                     <td colspan="3" style="padding: 14px 16px; font-size: 14px; font-weight: 700; color: #1e293b; text-align: right; border-top: 2px solid #6D31ED;">Grand Total</td>
                                     <td style="padding: 14px 16px; font-size: 16px; font-weight: 700; color: #6D31ED; text-align: right; border-top: 2px solid #6D31ED;">KES {{ number_format($order->total) }}</td>
