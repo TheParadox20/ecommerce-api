@@ -26,6 +26,18 @@ class PageViewController extends Controller
         $deviceType = $this->detectDevice($userAgent);
         $browser = $this->detectBrowser($userAgent);
 
+        // Authentic Data Filtering: Skip if user is an admin or hit is from an excluded IP
+        $user = auth('sanctum')->user();
+        if ($user && $user->hasRole('super_admin')) {
+            return response()->json(['message' => 'Admin activity not tracked'], 202);
+        }
+
+        // Optional: Filter by specific IP addresses (e.g. office IP or dev machine)
+        $excludedIps = explode(',', \App\Models\WebsiteSetting::where('key', 'analytics_excluded_ips')->value('value') ?? '');
+        if (in_array($ip, array_map('trim', $excludedIps))) {
+            return response()->json(['message' => 'Excluded IP ignored'], 202);
+        }
+
         // Fetch Location from IP (Free API)
         $location = ['country' => 'Unknown', 'countryCode' => '??', 'city' => 'Unknown'];
         try {
@@ -118,11 +130,6 @@ class PageViewController extends Controller
             ->groupBy('country')
             ->orderByDesc('count')
             ->limit(10)
-            ->get();
-
-        // 9. Recent Activity (Last 50 hits)
-        $recentActivity = PageView::orderByDesc('created_at')
-            ->limit(50)
             ->get();
 
         return response()->json([
