@@ -107,10 +107,6 @@ Route::get('/settings', [SettingController::class, 'index']);
 Route::get('/testimonials', [TestimonialController::class, 'index']);
 Route::get('/reviews', [ReviewController::class, 'index']);
 Route::post('/reviews', [ReviewController::class, 'store']);
-Route::get('/banners', [BannerController::class, 'index']);
-//misc....
-Route::apiResource('messages', MessagesController::class);
-Route::post('/ask', [MessageController::class, 'ask']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
 
 Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(function () {
@@ -182,6 +178,9 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
 
     // Admin Setting Routes
     Route::apiResource('/admin/settings', SettingController::class)->only(['update']);
+    Route::get('/admin/locations/export', [LocationController::class, 'export']);
+    Route::get('/admin/locations/template', [LocationController::class, 'template']);
+    Route::post('/admin/locations/import', [LocationController::class, 'import']);
     Route::apiResource('/admin/locations', LocationController::class)->except(['show']);
 
     // Admin Comment Moderation

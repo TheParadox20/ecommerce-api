@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Exports\LocationsExport;
+use App\Exports\LocationsTemplateExport;
+use App\Imports\LocationsImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LocationController extends Controller
 {
@@ -114,5 +118,35 @@ class LocationController extends Controller
             'success' => true,
             'data' => $counties,
         ]);
+    }
+
+    public function export()
+    {
+        return Excel::download(new LocationsExport, 'delivery_zones.xlsx');
+    }
+
+    public function template()
+    {
+        return Excel::download(new LocationsTemplateExport, 'delivery_zones_template.xlsx');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            Excel::import(new LocationsImport, $request->file('file'));
+            return response()->json([
+                'success' => true,
+                'message' => 'Delivery zones imported successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error importing file: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
