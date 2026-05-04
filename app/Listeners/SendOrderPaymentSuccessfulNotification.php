@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OrderNotification;
+use App\Mail\NewOrderReceived;
 
 class SendOrderPaymentSuccessfulNotification
 {
@@ -15,9 +16,12 @@ class SendOrderPaymentSuccessfulNotification
         $order = $event->order;
         $order->load(['orderDetail', 'sales.product', 'sales.productVariation']);
 
-        // 1. Send Email with PDF Invoice
+        $client = new Client();
+        $apiKey = config('app.TIARA_KEY');
+
+        // 1. Send Email with PDF Invoice to admin and buyer
         try {
-            $recipients = ['sales@ngwindsongk.com'];
+            $recipients = [config('mail.from.address')];
             if ($order->orderDetail && $order->orderDetail->email) {
                 $recipients[] = $order->orderDetail->email;
             }
@@ -25,15 +29,39 @@ class SendOrderPaymentSuccessfulNotification
             Mail::to($recipients)->send(new OrderNotification($order));
         }
         catch (\Exception $e) {
-            Log::error('Order email failed: ' . $e->getMessage());
+            Log::error('Order payment email failed: ' . $e->getMessage());
         }
 
-        // 2. Send SMS notification to Payer
+        // 2. Send Admin SMS notification (payment confirmed)
+        try {
+            $message = $order->slug . ' - Payment CONFIRMED. Total: KES ' . number_format($order->total) . '. Ref: ' . ($order->payment_reference ?? 'N/A') . '. Check admin panel.';
+            $adminRecipients = ['254791210705', '254718156421', '254113748906'];
+
+            foreach ($adminRecipients as $to) {
+                try {
+                    $client->post('https://api2.tiaraconnect.io/api/messaging/sendsms', [
+                        'headers' => [
+                            'Content-Type' => 'application/json',
+                            'Authorization' => 'Bearer ' . $apiKey,
+                        ],
+                        'json' => [
+                            'to' => $to,
+                            'from' => 'TIARACONECT',
+                            'message' => $message,
+                        ],
+                    ]);
+                    Log::info("Admin payment SMS sent|msisdn: $to|order: {$order->slug}");
+                } catch (\Exception $e) {
+                    Log::error("Admin payment SMS failed|msisdn: $to|error: " . $e->getMessage());
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Admin payment SMS setup failed: " . $e->getMessage());
+        }
+
+        // 3. Send SMS confirmation to Buyer
         if ($order->orderDetail && $order->orderDetail->phone) {
             try {
-                $client = new Client();
-                $apiKey = config('app.TIARA_KEY');
-                
                 // Format items for SMS
                 $itemsSummary = $order->sales->map(function($sale) {
                     $size = $sale->productVariation->name ?? 'Std';
