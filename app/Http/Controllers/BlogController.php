@@ -354,8 +354,8 @@ class BlogController extends Controller
      */
     private function sanitizeHtml($html)
     {
-        // Allow common rich text tags
-        $allowedTags = '<p><a><b><i><u><strong><em><ul><ol><li><br><h1><h2><h3><h4><h5><h6><img><iframe><div><span>';
-        return strip_tags($html, $allowedTags);
+        // Use mews/purifier to properly sanitize HTML, preventing XSS
+        // while allowing safe tags and attributes
+        return clean($html);
     }
 }

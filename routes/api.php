@@ -36,9 +36,9 @@ use App\Http\Controllers\PageViewController;
 
 Route::get('/nav-menus', [NavMenuController::class, 'index']);
 
-Route::post('/signup', [AuthController::class, 'register']);
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/signup', [AuthController::class, 'register'])->middleware('throttle:6,1');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:6,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:6,1');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -78,22 +78,22 @@ Route::get('/test/books', [TestController::class, 'books']);
 Route::get('/test/session', [TestController::class, 'testSession']);
 Route::get('/sms', [MessageController::class, 'sendSMS']);
 //product related routes
-// API Resource routes for ecommerce models
-Route::apiResource('products', ProductController::class);
-Route::apiResource('product-variations', App\Http\Controllers\ProductVariationController::class);
-Route::apiResource('attributes', App\Http\Controllers\AttributeController::class);
-Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueController::class);
-Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class);
-Route::apiResource('product-faqs', App\Http\Controllers\ProductFAQController::class);
-Route::apiResource('categories', App\Http\Controllers\CategoryController::class);
-Route::post('/categories/{id}/restore', [App\Http\Controllers\CategoryController::class, 'restore']);
-Route::apiResource('brands', App\Http\Controllers\BrandController::class);
-Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
-Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class);
-Route::apiResource('orders', App\Http\Controllers\OrderController::class)->middleware('idempotent');
-Route::apiResource('sales', App\Http\Controllers\SalesController::class);
-Route::apiResource('shipments', App\Http\Controllers\ShipmentController::class);
-Route::apiResource('recipes', RecipeController::class);
+// Public API Resource routes for ecommerce models (Read-only for most)
+Route::apiResource('products', ProductController::class)->only(['index', 'show']);
+Route::apiResource('product-variations', App\Http\Controllers\ProductVariationController::class)->only(['index', 'show']);
+Route::apiResource('attributes', App\Http\Controllers\AttributeController::class)->only(['index', 'show']);
+Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueController::class)->only(['index', 'show']);
+Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class)->only(['index', 'show']);
+Route::apiResource('product-faqs', App\Http\Controllers\ProductFAQController::class)->only(['index', 'show']);
+Route::apiResource('categories', App\Http\Controllers\CategoryController::class)->only(['index', 'show']);
+Route::apiResource('brands', App\Http\Controllers\BrandController::class)->only(['index', 'show']);
+Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class)->only(['index', 'show']);
+Route::apiResource('recipes', RecipeController::class)->only(['index', 'show']);
+
+// Orders (Public can create, but index/show/update/destroy are protected)
+Route::post('/orders', [App\Http\Controllers\OrderController::class, 'store'])->middleware('idempotent');
+
+// Cart (Handles its own auth logic)
 Route::apiResource('cart', CartController::class);
 Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 
@@ -149,6 +149,24 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
 
         // Voucher Management
         Route::apiResource('/admin/vouchers', VoucherController::class);
+        
+        // System Maintenance
+        Route::get('/run-migrations', function () {
+            Artisan::call('migrate', ['--force' => true]);
+            return Artisan::output();
+        });
+        Route::get('/run-seeder', function (Request $request) {
+            $class = $request->query('class', 'DatabaseSeeder');
+            Artisan::call('db:seed', ['--class' => $class, '--force' => true]);
+            return Artisan::output();
+        });
+        Route::get('/clear-cache', function () {
+            Artisan::call('config:clear');
+            Artisan::call('route:clear');
+            Artisan::call('view:clear');
+            Artisan::call('cache:clear');
+            return "✅ All caches cleared successfully!\n\n" . Artisan::output();
+        });
     });
 
     // Analytics Stats (All Admins)
@@ -213,6 +231,22 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
     Route::get('/export/sales', [App\Http\Controllers\ExportController::class, 'sales']);
     Route::get('/export/deliveries', [App\Http\Controllers\ExportController::class, 'deliveries']);
 
+    // Protected API Resource routes (Write/Admin actions)
+    Route::apiResource('products', ProductController::class)->except(['index', 'show']);
+    Route::apiResource('product-variations', App\Http\Controllers\ProductVariationController::class)->except(['index', 'show']);
+    Route::apiResource('attributes', App\Http\Controllers\AttributeController::class)->except(['index', 'show']);
+    Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueController::class)->except(['index', 'show']);
+    Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class)->except(['index', 'show']);
+    Route::apiResource('product-faqs', App\Http\Controllers\ProductFAQController::class)->except(['index', 'show']);
+    Route::apiResource('categories', App\Http\Controllers\CategoryController::class)->except(['index', 'show']);
+    Route::post('/categories/{id}/restore', [App\Http\Controllers\CategoryController::class, 'restore']);
+    Route::apiResource('brands', App\Http\Controllers\BrandController::class)->except(['index', 'show']);
+    Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
+    Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class)->except(['index', 'show']);
+    Route::apiResource('orders', App\Http\Controllers\OrderController::class)->except(['store']);
+    Route::apiResource('sales', App\Http\Controllers\SalesController::class);
+    Route::apiResource('shipments', App\Http\Controllers\ShipmentController::class);
+
 });
 
 // Distributor Specific Routes
@@ -235,22 +269,4 @@ Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class,
 Route::get('/locations/counties', [App\Http\Controllers\LocationController::class, 'counties']);
 Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware('idempotent');
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
-//system maintenance routes
-Route::get('/run-migrations', function () {
-    Artisan::call('migrate', ['--force' => true]);
-    return Artisan::output();
-});
-
-Route::get('/run-seeder', function (Request $request) {
-    $class = $request->query('class', 'DatabaseSeeder');
-    Artisan::call('db:seed', ['--class' => $class, '--force' => true]);
-    return Artisan::output();
-});
-
-Route::get('/clear-cache', function () {
-    Artisan::call('config:clear');
-    Artisan::call('route:clear');
-    Artisan::call('view:clear');
-    Artisan::call('cache:clear');
-    return "✅ All caches cleared successfully!\n\n" . Artisan::output();
-});
+// System maintenance routes moved to super_admin group

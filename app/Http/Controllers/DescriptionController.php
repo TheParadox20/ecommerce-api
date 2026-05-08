@@ -22,6 +22,7 @@ class DescriptionController extends Controller
                 'description' => 'required|string',
             ]);
     
+            $validated['description'] = clean($validated['description']);
             $description = Description::create($validated);
             return response()->json(['success' => true, 'id' => $description->id], 201);
         }catch(\Illuminate\Validation\ValidationException $e){
@@ -29,7 +30,7 @@ class DescriptionController extends Controller
             if($description){
                 //update the description
                 $description->update([
-                    'description' => $request->description,
+                    'description' => clean($request->description),
                     'product_id' => $request->product_id,
                 ]);
                 return response()->json(['success' => true, 'id' => $description->id], 201);
@@ -61,6 +62,10 @@ class DescriptionController extends Controller
             'product_id' => 'sometimes|exists:products,id',
             'description' => 'sometimes|string',
         ]);
+
+        if (isset($validated['description'])) {
+            $validated['description'] = clean($validated['description']);
+        }
 
         $description->update($validated);
         return response()->json($description->load('product'));

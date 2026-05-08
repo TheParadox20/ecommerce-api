@@ -90,13 +90,34 @@ class PaymentController extends Controller
 
             if (($jsonResponse->ResponseCode ?? '') == "0") {
                 logger('Payment prompt sent to ' . $contact);
+                return response()->json([
+                    'success' => true,
+                    'ResponseCode' => $jsonResponse->ResponseCode,
+                    'CheckoutRequestID' => $jsonResponse->CheckoutRequestID,
+                    'CustomerMessage' => $jsonResponse->CustomerMessage ?? ''
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $jsonResponse->ResponseDescription ?? $jsonResponse->errorMessage ?? 'Failed to initiate payment prompt.'
+                ], 400);
             }
-            return response()->json($jsonResponse);
+        }
+        catch (\GuzzleHttp\Exception\ClientException $e) {
+            $responseBody = $e->getResponse()->getBody()->getContents();
+            $errorData = json_decode($responseBody);
+            logger('M-Pesa API Error: ' . $responseBody);
+            return response()->json([
+                'success' => false,
+                'message' => $errorData->errorMessage ?? 'M-Pesa Service Error. Please ensure your number is correct and active.'
+            ], 400);
         }
         catch (\Exception $e) {
-            return response()->json(([
-                'error' => $e->getMessage(),
-            ]));
+            logger('M-Pesa Exception: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred during payment processing.'
+            ], 500);
         }
     }
     public function mpesaCallback(Request $request)
