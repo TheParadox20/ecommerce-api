@@ -36,9 +36,8 @@ class PaymentController extends Controller
             return json_decode($response->getBody())->access_token;
         }
         catch (\Exception $e) {
-            return response()->json(([
-                'error' => $e->getMessage(),
-            ]));
+            logger('M-Pesa Token Error: ' . $e->getMessage());
+            return null;
         }
     }
     public function mpesaSTK(Request $request)
@@ -50,6 +49,12 @@ class PaymentController extends Controller
         try {
             $client = new Client();
             $token = $this->getToken();
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to authenticate with M-Pesa. Please check credentials.'
+                ], 500);
+            }
             logger($request->amount);
             logger($contact);
 
@@ -66,7 +71,7 @@ class PaymentController extends Controller
                     "TransactionType" => "CustomerBuyGoodsOnline",
                     "Amount" => $request->amount,
                     "PartyA" => $contact,
-                    "PartyB" => 960393,
+                    "PartyB" => $this->shortcode,
                     "PhoneNumber" => $contact,
                     "CallBackURL" => "https://api.ngwindsongk.com/api/mpesa/mpesaCallback",
                     "AccountReference" => $request->order_id,

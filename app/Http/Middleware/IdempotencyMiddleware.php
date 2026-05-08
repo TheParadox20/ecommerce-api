@@ -20,7 +20,7 @@ class IdempotencyMiddleware
             return $next($request);
         }
 
-        $key = 'idempotency:' . $request->header('Idempotency-Key');
+        $key = 'idempotency:' . $request->method() . ':' . $request->path() . ':' . $request->header('Idempotency-Key');
 
         if (Cache::has($key)) {
             $cachedResponse = Cache::get($key);
