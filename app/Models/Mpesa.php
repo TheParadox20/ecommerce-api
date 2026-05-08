@@ -18,5 +18,6 @@ class Mpesa extends Model
         'amount',
         'account_reference',
         'status',
+        'mpesa_receipt_number',
     ];
 }

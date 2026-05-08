@@ -71,7 +71,7 @@ class PaymentController extends Controller
                     "TransactionType" => "CustomerBuyGoodsOnline",
                     "Amount" => $request->amount,
                     "PartyA" => $contact,
-                    "PartyB" => $this->shortcode,
+                    "PartyB" => config('app.MPESA_TILL_NUMBER', $this->shortcode),
                     "PhoneNumber" => $contact,
                     "CallBackURL" => "https://api.ngwindsongk.com/api/mpesa/mpesaCallback",
                     "AccountReference" => $request->order_id,
@@ -154,6 +154,12 @@ class PaymentController extends Controller
                 'status' => $resultCode == 0 ? 'success' : 'failed',
             ]);
 
+            if ($resultCode == 0) {
+                $items = collect($body['CallbackMetadata']['Item']);
+                $mpesaCode = $items->firstWhere('Name', 'MpesaReceiptNumber')['Value'] ?? null;
+                $mpesa->update(['mpesa_receipt_number' => $mpesaCode]);
+            }
+
             $order = Order::where('slug', $mpesa->account_reference)->first();
 
             if (!$order) {
@@ -193,5 +199,21 @@ class PaymentController extends Controller
             logger('Callback error: ' . $e->getMessage());
             return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
         }
+    }
+
+    public function adminIndex(Request $request)
+    {
+        $query = Mpesa::query();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('phone', 'like', "%$search%")
+                ->orWhere('mpesa_receipt_number', 'like', "%$search%")
+                ->orWhere('account_reference', 'like', "%$search%");
+        }
+
+        $payments = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        return response()->json($payments);
     }
 }

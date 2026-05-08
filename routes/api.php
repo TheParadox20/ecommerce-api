@@ -246,6 +246,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
     Route::apiResource('orders', App\Http\Controllers\OrderController::class)->except(['store']);
     Route::apiResource('sales', App\Http\Controllers\SalesController::class);
     Route::apiResource('shipments', App\Http\Controllers\ShipmentController::class);
+    Route::get('/admin/mpesa-payments', [PaymentController::class, 'adminIndex']);
 
 });
 
