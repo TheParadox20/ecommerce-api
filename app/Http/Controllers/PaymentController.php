@@ -69,7 +69,7 @@ class PaymentController extends Controller
                     "Password" => $password,
                     "Timestamp" => $timestamp,
                     "TransactionType" => "CustomerBuyGoodsOnline",
-                    "Amount" => $request->amount,
+                    "Amount" => round($request->amount),
                     "PartyA" => $contact,
                     "PartyB" => config('app.MPESA_TILL_NUMBER', $this->shortcode),
                     "PhoneNumber" => $contact,
@@ -215,5 +215,18 @@ class PaymentController extends Controller
         $payments = $query->orderBy('created_at', 'desc')->paginate(20);
 
         return response()->json($payments);
+    }
+
+    public function checkStatus($orderId)
+    {
+        $order = Order::where('slug', $orderId)->first();
+        if (!$order) {
+            return response()->json(['status' => 'not_found'], 404);
+        }
+
+        return response()->json([
+            'status' => $order->payment_status, // success, failed, pending
+            'reference' => $order->payment_reference
+        ]);
     }
 }

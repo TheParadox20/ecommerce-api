@@ -269,5 +269,6 @@ Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
 Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class, 'calculate']);
 Route::get('/locations/counties', [App\Http\Controllers\LocationController::class, 'counties']);
 Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware('idempotent');
+Route::get('/pay/mpesa/status/{order_id}', [PaymentController::class, 'checkStatus']);
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
 // System maintenance routes moved to super_admin group
