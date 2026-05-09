@@ -209,7 +209,8 @@ class PaymentController extends Controller
                 ->orWhere('account_reference', 'like', "%$search%");
         }
 
-        $payments = $query->orderBy('created_at', 'desc')->paginate(20);
+        $perPage = $request->get('per_page', 20);
+        $payments = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return response()->json($payments);
     }
