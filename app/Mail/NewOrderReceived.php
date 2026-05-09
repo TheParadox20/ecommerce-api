@@ -22,7 +22,7 @@ class NewOrderReceived extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New Order #' . substr($this->order->slug, 0, 8) . ' - KES ' . number_format($this->order->total),
+            subject: 'Payment Successful >order number-#' . $this->order->slug . '- Amount -KES' . number_format($this->order->total),
         );
     }
 

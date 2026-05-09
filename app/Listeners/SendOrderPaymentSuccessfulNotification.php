@@ -19,14 +19,15 @@ class SendOrderPaymentSuccessfulNotification
         $client = new Client();
         $apiKey = config('app.TIARA_KEY');
 
-        // 1. Send Email with PDF Invoice to admin and buyer
+        // 1. Send Email to Admin and Buyer
         try {
-            $recipients = [config('mail.from.address')];
-            if ($order->orderDetail && $order->orderDetail->email) {
-                $recipients[] = $order->orderDetail->email;
-            }
+            // Admin receives NewOrderReceived (Premium template + Invoice)
+            Mail::to(config('mail.from.address'))->send(new NewOrderReceived($order));
 
-            Mail::to($recipients)->send(new OrderNotification($order));
+            // Buyer receives OrderNotification (Simple template + Invoice)
+            if ($order->orderDetail && $order->orderDetail->email) {
+                Mail::to($order->orderDetail->email)->send(new OrderNotification($order));
+            }
         }
         catch (\Exception $e) {
             Log::error('Order payment email failed: ' . $e->getMessage());

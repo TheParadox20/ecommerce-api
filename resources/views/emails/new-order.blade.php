@@ -54,6 +54,12 @@
                                                             <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Phone</td>
                                                             <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->orderDetail->phone }}</td>
                                                         </tr>
+                                                        @if($order->orderDetail->email)
+                                                        <tr>
+                                                            <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Email</td>
+                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->orderDetail->email }}</td>
+                                                        </tr>
+                                                        @endif
                                                         @if($order->orderDetail->address)
                                                         <tr>
                                                             <td style="color: #94a3b8; font-size: 12px;">Address</td>
@@ -67,13 +73,28 @@
                                                     <table role="presentation" cellpadding="0" cellspacing="0">
                                                         <tr>
                                                             <td style="padding-bottom: 6px; width: 80px; color: #94a3b8; font-size: 12px;">Method</td>
-                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ ucfirst($order->delivery_method ?? 'Standard') }}</td>
+                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ ucfirst(str_replace('_', ' ', $order->delivery_method ?? 'Standard')) }}</td>
                                                         </tr>
-                                                        @if($order->delivery_zone)
+                                                        @if($order->delivery_method === 'pickup')
                                                         <tr>
-                                                            <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Zone</td>
-                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->delivery_zone }}</td>
+                                                            <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Station</td>
+                                                            <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->pickup_station ?? 'N/A' }}</td>
                                                         </tr>
+                                                        @else
+                                                            @if($order->delivery_zone)
+                                                            <tr>
+                                                                <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Zone</td>
+                                                                <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">
+                                                                    {{ $order->delivery_zone }}
+                                                                    @php
+                                                                        $location = \App\Models\Location::where('name', $order->delivery_zone)->first();
+                                                                    @endphp
+                                                                    @if($location && $location->sacco_rider)
+                                                                        <br><span style="color: #94a3b8; font-size: 11px; font-weight: normal;">({{ $location->sacco_rider }})</span>
+                                                                    @endif
+                                                                </td>
+                                                            </tr>
+                                                            @endif
                                                         @endif
                                                         @if($order->expected_shipping_date)
                                                         <tr>
