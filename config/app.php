@@ -32,6 +32,7 @@ return [
     'MPESA_CONSUMER_SECRET' => env('MPESA_CONSUMER_SECRET'),
     'MPESA_PASSKEY' => env('MPESA_PASSKEY'),
     'MPESA_SHORTCODE' => env('MPESA_SHORTCODE'),
+    'MPESA_TILL_NUMBER' => env('MPESA_TILL_NUMBER'),
 
     /*
     |--------------------------------------------------------------------------

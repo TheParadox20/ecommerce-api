@@ -12,11 +12,13 @@ use App\Events\OrderPaymentFailed;
 class PaymentController extends Controller
 {
     protected $shortcode;
+    protected $till;
     protected $passkey;
 
     public function __construct()
     {
         $this->shortcode = config('app.MPESA_SHORTCODE');
+        $this->till = config('app.MPESA_TILL_NUMBER');
         $this->passkey = config('app.MPESA_PASSKEY');
     }
     public function getToken()
@@ -34,7 +36,8 @@ class PaymentController extends Controller
             ]);
 
             return json_decode($response->getBody())->access_token;
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             logger('M-Pesa Token Error: ' . $e->getMessage());
             return null;
         }
@@ -70,7 +73,7 @@ class PaymentController extends Controller
                     "TransactionType" => "CustomerBuyGoodsOnline",
                     "Amount" => round($request->amount),
                     "PartyA" => $contact,
-                    "PartyB" => config('app.MPESA_SHORTCODE', $this->shortcode),
+                    "PartyB" => $this->till,
                     "PhoneNumber" => $contact,
                     "CallBackURL" => "https://api.ngwindsongk.com/api/mpesa/mpesaCallback",
                     "AccountReference" => $request->order_id,
@@ -106,7 +109,8 @@ class PaymentController extends Controller
                     'message' => $jsonResponse->ResponseDescription ?? $jsonResponse->errorMessage ?? 'Failed to initiate payment prompt.'
                 ], 400);
             }
-        } catch (\GuzzleHttp\Exception\ClientException $e) {
+        }
+        catch (\GuzzleHttp\Exception\ClientException $e) {
             $responseBody = $e->getResponse()->getBody()->getContents();
             $errorData = json_decode($responseBody);
             logger('M-Pesa API Error: ' . $responseBody);
@@ -114,7 +118,8 @@ class PaymentController extends Controller
                 'success' => false,
                 'message' => $errorData->errorMessage ?? 'M-Pesa Service Error. Please ensure your number is correct and active.'
             ], 400);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             logger('M-Pesa Exception: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
@@ -180,7 +185,8 @@ class PaymentController extends Controller
 
                 OrderPaymentSuccessful::dispatch($order);
 
-            } else {
+            }
+            else {
                 logger("Payment FAILED | Code: $resultCode | Desc: $resultDesc");
                 $order->update([
                     'payment_status' => 'failed',
@@ -190,7 +196,8 @@ class PaymentController extends Controller
             }
 
             return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             logger('Callback error: ' . $e->getMessage());
             return response()->json(['ResultCode' => 0, 'ResultDesc' => 'Accepted']);
         }
