@@ -14,6 +14,9 @@ class BrandController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->facebook_url === '') $request->merge(['facebook_url' => null]);
+        if ($request->instagram_url === '') $request->merge(['instagram_url' => null]);
+
         $validated = $request->validate([
             'name' => 'required|string|unique:brands,name',
             'logo' => 'nullable|image|max:2048',
@@ -43,6 +46,9 @@ class BrandController extends Controller
 
     public function update(Request $request, $id)
     {
+        if ($request->facebook_url === '') $request->merge(['facebook_url' => null]);
+        if ($request->instagram_url === '') $request->merge(['instagram_url' => null]);
+
         $brand = Brand::findOrFail($id);
         $validated = $request->validate([
             'name' => 'sometimes|string|unique:brands,name,' . $id,
