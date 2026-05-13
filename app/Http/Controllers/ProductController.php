@@ -53,9 +53,13 @@ class ProductController extends Controller
             $products->where('name', '!=', $request->exclude);
         }
 
-        // 🔎 Search by name
+        // 🔎 Search by name and about using Full-Text index
         if ($request->filled('search')) {
-            $products->where('name', 'like', '%' . $request->search . '%');
+            $search = $request->search;
+            $products->where(function($q) use ($search) {
+                $q->whereFullText(['name', 'about'], $search)
+                  ->orWhere('name', 'like', '%' . $search . '%'); // Fallback for very short terms
+            });
         }
 
         // 🏷️ Filter by offers (discounted products)
