@@ -9,7 +9,11 @@ class BrandController extends Controller
 {
     public function index()
     {
-        return Brand::with(['categories'])->withCount('products')->get();
+        return Brand::with(['categories'])
+            ->withCount('products')
+            ->orderBy('sort_order', 'asc')
+            ->orderBy('name', 'asc')
+            ->get();
     }
 
     public function store(Request $request)
@@ -25,6 +29,11 @@ class BrandController extends Controller
             'is_active' => 'nullable|boolean',
             'facebook_url' => 'nullable|url',
             'instagram_url' => 'nullable|url',
+            'min_order_amount' => 'nullable|numeric',
+            'max_order_amount' => 'nullable|numeric',
+            'tracking_snippet' => 'nullable|string',
+            'purchase_snippet' => 'nullable|string',
+            'sort_order' => 'nullable|integer',
         ]);
 
         if ($request->hasFile('logo')) {
@@ -58,6 +67,11 @@ class BrandController extends Controller
             'is_active' => 'nullable|boolean',
             'facebook_url' => 'nullable|url',
             'instagram_url' => 'nullable|url',
+            'min_order_amount' => 'nullable|numeric',
+            'max_order_amount' => 'nullable|numeric',
+            'tracking_snippet' => 'nullable|string',
+            'purchase_snippet' => 'nullable|string',
+            'sort_order' => 'nullable|integer',
         ]);
 
         if ($request->hasFile('logo')) {

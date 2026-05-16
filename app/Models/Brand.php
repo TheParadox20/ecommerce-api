@@ -24,6 +24,7 @@ class Brand extends Model
         'max_order_amount',
         'tracking_snippet',
         'purchase_snippet',
+        'sort_order',
     ];
 
 

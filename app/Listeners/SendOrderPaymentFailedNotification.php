@@ -13,6 +13,7 @@ class SendOrderPaymentFailedNotification
         $order = $event->order;
         $order->load(['orderDetail']);
 
+        /*
         // Send SMS confirmation to buyer
         if ($order->orderDetail && $order->orderDetail->phone) {
             try {
@@ -38,5 +39,8 @@ class SendOrderPaymentFailedNotification
                 Log::error("Payment Failed Buyer SMS failed|msisdn: {$order->orderDetail->phone}|error: " . $e->getMessage());
             }
         }
+        */
+
+        Log::info("Payment failed for order {$order->slug}. SMS notification suppressed (commented out).");
     }
 }
