@@ -27,23 +27,34 @@ class ProductController extends Controller
         // 🔎 Filter by category or brand
         if ($request->filled('category') && $request->filled('brand') && strtolower($request->category) === strtolower($request->brand)) {
             $slugValue = strtolower($request->category);
-            $products->where(function($q) use ($slugValue) {
-                $q->whereHas('category', function ($query) use ($slugValue) {
-                    $query->whereRaw('LOWER(name) = ?', [$slugValue]);
-                })->orWhereHas('brand', function ($query) use ($slugValue) {
-                    $query->whereRaw('LOWER(name) = ?', [$slugValue]);
+            $spacedValue = str_replace('-', ' ', $slugValue);
+            $products->where(function($q) use ($slugValue, $spacedValue) {
+                $q->whereHas('category', function ($query) use ($slugValue, $spacedValue) {
+                    $query->whereRaw('LOWER(name) = ?', [$spacedValue])
+                          ->orWhereRaw('LOWER(name) = ?', [$slugValue]);
+                })->orWhereHas('brand', function ($query) use ($slugValue, $spacedValue) {
+                    $query->whereRaw('LOWER(name) = ?', [$spacedValue])
+                          ->orWhereRaw('LOWER(name) = ?', [$slugValue])
+                          ->orWhereRaw('LOWER(slug) = ?', [$slugValue]);
                 });
             });
         } else {
             if ($request->filled('category')) {
                 $products->whereHas('category', function ($query) use ($request) {
-                    $query->whereRaw('LOWER(name) = ?', [strtolower($request->category)]);
+                    $slugValue = strtolower($request->category);
+                    $spacedValue = str_replace('-', ' ', $slugValue);
+                    $query->whereRaw('LOWER(name) = ?', [$spacedValue])
+                          ->orWhereRaw('LOWER(name) = ?', [$slugValue]);
                 });
             }
 
             if ($request->filled('brand')) {
                 $products->whereHas('brand', function ($query) use ($request) {
-                    $query->whereRaw('LOWER(name) = ?', [strtolower($request->brand)]);
+                    $slugValue = strtolower($request->brand);
+                    $spacedValue = str_replace('-', ' ', $slugValue);
+                    $query->whereRaw('LOWER(name) = ?', [$spacedValue])
+                          ->orWhereRaw('LOWER(name) = ?', [$slugValue])
+                          ->orWhereRaw('LOWER(slug) = ?', [$slugValue]);
                 });
             }
         }

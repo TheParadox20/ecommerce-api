@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class BrandController extends Controller
 {
@@ -34,7 +35,19 @@ class BrandController extends Controller
             'tracking_snippet' => 'nullable|string',
             'purchase_snippet' => 'nullable|string',
             'sort_order' => 'nullable|integer',
+            'slug' => 'nullable|string|unique:brands,slug',
         ]);
+
+        if (empty($validated['slug'])) {
+            $validated['slug'] = Str::slug($validated['name']);
+            // Ensure unique slug if auto-generated
+            $originalSlug = $validated['slug'];
+            $counter = 1;
+            while (Brand::where('slug', $validated['slug'])->exists()) {
+                $validated['slug'] = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+        }
 
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
@@ -72,7 +85,19 @@ class BrandController extends Controller
             'tracking_snippet' => 'nullable|string',
             'purchase_snippet' => 'nullable|string',
             'sort_order' => 'nullable|integer',
+            'slug' => 'nullable|string|unique:brands,slug,' . $id,
         ]);
+
+        if (empty($validated['slug']) && isset($validated['name'])) {
+            $validated['slug'] = Str::slug($validated['name']);
+            // Ensure unique slug if auto-generated
+            $originalSlug = $validated['slug'];
+            $counter = 1;
+            while (Brand::where('slug', $validated['slug'])->where('id', '!=', $id)->exists()) {
+                $validated['slug'] = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+        }
 
         if ($request->hasFile('logo')) {
             // Delete old logo if it exists
