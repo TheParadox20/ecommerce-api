@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Carbon\Carbon;
 use App\Models\Order;
+use App\Events\OrderPaymentSuccessful;
 
 class SalesController extends Controller
 {
@@ -100,6 +101,27 @@ class SalesController extends Controller
         //
     }
 
+    public function verifyPayment(string $id)
+    {
+        $order = Order::findOrFail($id);
+
+        if ($order->payment_status === 'success') {
+            return response()->json(['message' => 'Order is already marked as paid'], 400);
+        }
+
+        $order->update([
+            'payment_status' => 'success'
+        ]);
+
+        // Trigger the exact same notification process as the automatic STK callback
+        OrderPaymentSuccessful::dispatch($order);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment verified successfully. Customer has been notified.'
+        ]);
+    }
+
     private function applyOrderFilters(Builder|Relation $query, Request $request): void
     {
         if ($request->filled('id')) {
@@ -111,7 +133,17 @@ class SalesController extends Controller
         }
 
         if ($request->filled('payment_status')) {
-            $query->where('payment_status', $request->payment_status);
+            if ($request->payment_status === 'success') {
+                $query->where(function($q) {
+                    $q->where('payment_status', 'success')
+                      ->orWhere(function($sub) {
+                          $sub->where('payment_status', 'pending')
+                              ->whereNotNull('payment_reference');
+                      });
+                });
+            } else {
+                $query->where('payment_status', $request->payment_status);
+            }
         }
 
         if ($request->filled('payment_method')) {

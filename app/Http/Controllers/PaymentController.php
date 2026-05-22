@@ -227,4 +227,38 @@ class PaymentController extends Controller
             'reference' => $order->payment_reference
         ]);
     }
+
+    public function submitManualReceipt(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|string',
+            'receipt_number' => 'required|string|min:5|max:20',
+        ]);
+
+        $order = Order::where('slug', $request->order_id)->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.'
+            ], 404);
+        }
+
+        if ($order->payment_status === 'success') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This order is already paid.'
+            ], 400);
+        }
+
+        // Keep status as 'pending' but set the reference so the Admin knows it awaits verification
+        $order->update([
+            'payment_reference' => strtoupper(trim($request->receipt_number))
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Receipt submitted successfully. Awaiting verification.'
+        ]);
+    }
 }

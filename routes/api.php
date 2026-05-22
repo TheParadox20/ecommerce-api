@@ -244,6 +244,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
     Route::apiResource('drafts', App\Http\Controllers\DraftController::class);
     Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class)->except(['index', 'show']);
     Route::apiResource('orders', App\Http\Controllers\OrderController::class)->except(['store']);
+    Route::post('/admin/orders/{id}/verify-payment', [App\Http\Controllers\SalesController::class, 'verifyPayment']);
     Route::apiResource('sales', App\Http\Controllers\SalesController::class);
     Route::apiResource('shipments', App\Http\Controllers\ShipmentController::class);
     Route::get('/admin/mpesa-payments', [PaymentController::class, 'adminIndex']);
@@ -270,5 +271,6 @@ Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class,
 Route::get('/locations/counties', [App\Http\Controllers\LocationController::class, 'counties']);
 Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware('idempotent');
 Route::get('/pay/mpesa/status/{order_id}', [PaymentController::class, 'checkStatus']);
+Route::post('/pay/mpesa/manual-receipt', [PaymentController::class, 'submitManualReceipt']);
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
 // System maintenance routes moved to super_admin group
