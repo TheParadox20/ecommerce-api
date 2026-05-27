@@ -30,6 +30,7 @@ class BrandController extends Controller
             'is_active' => 'nullable|boolean',
             'facebook_url' => 'nullable|url',
             'instagram_url' => 'nullable|url',
+            'tiktok_url' => 'nullable|url',
             'min_order_amount' => 'nullable|numeric',
             'max_order_amount' => 'nullable|numeric',
             'tracking_snippet' => 'nullable|string',
@@ -70,6 +71,7 @@ class BrandController extends Controller
     {
         if ($request->facebook_url === '') $request->merge(['facebook_url' => null]);
         if ($request->instagram_url === '') $request->merge(['instagram_url' => null]);
+        if ($request->tiktok_url === '') $request->merge(['tiktok_url' => null]);
 
         $brand = Brand::findOrFail($id);
         $validated = $request->validate([
@@ -80,6 +82,7 @@ class BrandController extends Controller
             'is_active' => 'nullable|boolean',
             'facebook_url' => 'nullable|url',
             'instagram_url' => 'nullable|url',
+            'tiktok_url' => 'nullable|url',
             'min_order_amount' => 'nullable|numeric',
             'max_order_amount' => 'nullable|numeric',
             'tracking_snippet' => 'nullable|string',

@@ -21,6 +21,7 @@ class Brand extends Model
         'is_active',
         'facebook_url',
         'instagram_url',
+        'tiktok_url',
         'min_order_amount',
         'max_order_amount',
         'tracking_snippet',
