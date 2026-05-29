@@ -288,7 +288,22 @@ class OrderController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $order = Order::findOrFail($id);
+
+        DB::transaction(function () use ($order) {
+            // Delete dependent records
+            $order->sales()->delete();
+            $order->orderDetail()->delete();
+            $order->commission()->delete();
+            
+            // Delete the order itself
+            $order->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order deleted successfully'
+        ]);
     }
 
     private function applyOrderFilters(Builder|Relation $query, Request $request): void

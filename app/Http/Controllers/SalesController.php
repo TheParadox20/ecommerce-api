@@ -98,7 +98,22 @@ class SalesController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $order = Order::findOrFail($id);
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order) {
+            // Delete dependent records
+            $order->sales()->delete();
+            $order->orderDetail()->delete();
+            $order->commission()->delete();
+            
+            // Delete the order itself
+            $order->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order deleted successfully'
+        ]);
     }
 
     public function verifyPayment(string $id)
