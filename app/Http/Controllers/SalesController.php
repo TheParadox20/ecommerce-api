@@ -139,6 +139,22 @@ class SalesController extends Controller
 
     private function applyOrderFilters(Builder|Relation $query, Request $request): void
     {
+        // ─── Sales Intelligence baseline filter ───────────────────────────────────
+        // Only surface orders that are paid (payment_status = success) OR are
+        // awaiting manual payment verification (payment_status = pending AND a
+        // payment_reference/receipt code has been submitted). This hides abandoned
+        // test transactions from the sales dashboard by default.
+        if (!$request->filled('payment_status')) {
+            $query->where(function ($q) {
+                $q->where('payment_status', 'success')
+                  ->orWhere(function ($sub) {
+                      $sub->where('payment_status', 'pending')
+                          ->whereNotNull('payment_reference');
+                  });
+            });
+        }
+        // ─────────────────────────────────────────────────────────────────────────
+
         if ($request->filled('id')) {
             $query->whereKey($request->id);
         }
@@ -148,14 +164,10 @@ class SalesController extends Controller
         }
 
         if ($request->filled('payment_status')) {
-            if ($request->payment_status === 'success') {
-                $query->where(function($q) {
-                    $q->where('payment_status', 'success')
-                      ->orWhere(function($sub) {
-                          $sub->where('payment_status', 'pending')
-                              ->whereNotNull('payment_reference');
-                      });
-                });
+            if ($request->payment_status === 'pending') {
+                // "Pending Verification" = pending status WITH a receipt code
+                $query->where('payment_status', 'pending')
+                      ->whereNotNull('payment_reference');
             } else {
                 $query->where('payment_status', $request->payment_status);
             }
