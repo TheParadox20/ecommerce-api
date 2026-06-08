@@ -14,11 +14,19 @@ class SalesExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
 {
     protected $dateFrom;
     protected $dateTo;
+    protected $status;
+    protected $orderType;
+    protected $paymentStatus;
+    protected $search;
 
-    public function __construct($dateFrom = null, $dateTo = null)
+    public function __construct($dateFrom = null, $dateTo = null, $status = null, $orderType = null, $paymentStatus = null, $search = null)
     {
         $this->dateFrom = $dateFrom;
         $this->dateTo = $dateTo;
+        $this->status = $status;
+        $this->orderType = $orderType;
+        $this->paymentStatus = $paymentStatus;
+        $this->search = $search;
     }
 
     public function query()
@@ -31,6 +39,28 @@ class SalesExport implements FromQuery, WithMapping, WithHeadings, ShouldAutoSiz
 
         if ($this->dateTo) {
             $query->where('created_at', '<=', $this->dateTo);
+        }
+
+        if ($this->status) {
+            $query->where('status', $this->status);
+        }
+
+        if ($this->orderType) {
+            $query->where('order_type', $this->orderType);
+        }
+
+        if ($this->paymentStatus) {
+            $query->where('payment_status', $this->paymentStatus);
+        }
+
+        if ($this->search) {
+            $query->where(function($q) {
+                $q->where('slug', 'like', "%{$this->search}%")
+                  ->orWhereHas('orderDetail', function($q) {
+                      $q->where('full_name', 'like', "%{$this->search}%")
+                        ->orWhere('phone', 'like', "%{$this->search}%");
+                  });
+            });
         }
 
         return $query->orderBy('created_at', 'desc');
