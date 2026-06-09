@@ -105,6 +105,7 @@ Route::post('/blogs/{id}/comments', [BlogController::class, 'storeComment']);
 // Settings, Testimonials, Banners Public
 Route::get('/settings', [SettingController::class, 'index']);
 Route::get('/testimonials', [TestimonialController::class, 'index']);
+Route::get('/banners', [BannerController::class, 'index']);
 Route::get('/reviews', [ReviewController::class, 'index']);
 Route::post('/reviews', [ReviewController::class, 'store']);
 Route::get('/faqs', [ProductsController::class, 'faqs']);
