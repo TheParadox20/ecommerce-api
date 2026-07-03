@@ -26,13 +26,12 @@ class ProductImageController extends Controller
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'product_variation_id' => 'nullable|exists:product_variations,id',
-            'media' => 'sometimes',
+            'media' => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'is_primary' => 'nullable|string', // Admin sends 'true' as string in FormData
             'kept_media_ids' => 'nullable|string'
         ]);
 
         $product = Product::findOrFail($request->product_id);
-        logger('ProductImage upload request', $request->all());
 
         try {
             DB::beginTransaction();
@@ -48,7 +47,8 @@ class ProductImageController extends Controller
                         try {
                             $path_parts = explode('storage/products/', $img->url);
                             if (count($path_parts) > 1) {
-                                $relativePath = 'storage/products/' . $path_parts[1];
+                                $cleanPath = str_replace(['../', '..\\'], '', $path_parts[1]);
+                                $relativePath = 'storage/products/' . ltrim($cleanPath, '/');
                                 $absolutePath = public_path($relativePath);
                                 if (file_exists($absolutePath)) {
                                     unlink($absolutePath);
@@ -133,7 +133,8 @@ class ProductImageController extends Controller
                 try {
                     $path_parts = explode('storage/products/', $image->url);
                     if (count($path_parts) > 1) {
-                        $relativePath = 'storage/products/' . $path_parts[1];
+                        $cleanPath = str_replace(['../', '..\\'], '', $path_parts[1]);
+                        $relativePath = 'storage/products/' . ltrim($cleanPath, '/');
                         $absolutePath = public_path($relativePath);
                         if (file_exists($absolutePath)) {
                             unlink($absolutePath);

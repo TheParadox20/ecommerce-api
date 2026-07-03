@@ -54,9 +54,8 @@ class OrderController extends Controller
                 break;
         }
 
-        $orders = $request->filled('per_page')
-            ? $query->paginate((int) $request->get('per_page', 20))
-            : $query->get();
+        $perPage = $request->filled('per_page') ? min(100, (int) $request->get('per_page')) : 20;
+        $orders = $query->paginate($perPage);
 
         return response()->json($orders);
     }
@@ -146,26 +145,58 @@ class OrderController extends Controller
                     }
                 }
 
+                $calculatedTotal = 0;
+                $processedSales = [];
+
                 // Check stock and apply pessimistic locking Before writing records
                 foreach ($data['sales'] as $sale) {
+                    $actualPrice = 0;
                     if (!empty($sale['variation'])) {
                         $variation = ProductVariation::where('id', $sale['variation'])->lockForUpdate()->first();
                         if (!$variation || $variation->stock < $sale['quantity']) {
                             throw new Exception("Insufficient stock for product variation. Requested: {$sale['quantity']}, Available: " . ($variation ? $variation->stock : 0));
                         }
                         $variation->decrement('stock', $sale['quantity']);
+                        $actualPrice = $variation->price;
                     } else {
                         $product = Product::where('id', $sale['id'])->lockForUpdate()->first();
                         if (!$product || $product->stock < $sale['quantity']) {
                             throw new Exception("Insufficient stock for product. Requested: {$sale['quantity']}, Available: " . ($product ? $product->stock : 0));
                         }
                         $product->decrement('stock', $sale['quantity']);
+                        $actualPrice = $product->price;
+                    }
+                    
+                    $processedSales[] = [
+                        'id' => $sale['id'],
+                        'variation' => $sale['variation'] ?? null,
+                        'quantity' => $sale['quantity'],
+                        'price' => $actualPrice,
+                    ];
+                    
+                    $calculatedTotal += ($actualPrice * $sale['quantity']);
+                }
+
+                $calculatedTotal += ($data['shipping'] ?? 0);
+
+                // Apply voucher discount if present
+                if ($request->filled('voucher_id')) {
+                    $voucher = \App\Models\Voucher::find($request->voucher_id);
+                    if ($voucher && $voucher->status === 'active') {
+                        if ($voucher->discount_type === 'percentage') {
+                            $discountAmount = $calculatedTotal * ($voucher->discount_amount / 100);
+                            $calculatedTotal -= $discountAmount;
+                        } elseif ($voucher->discount_type === 'fixed') {
+                            $calculatedTotal -= $voucher->discount_amount;
+                        }
                     }
                 }
+                
+                $calculatedTotal = max(0, $calculatedTotal);
 
                 $order = Order::create([
                     'user_id' => $data['user_id'] ?? null,
-                    'total' => $data['total'],
+                    'total' => $calculatedTotal, // Securely computed total
                     'payment_method' => $data['payment_method'],
                     'delivery_method' => $data['delivery_method'] ?? null,
                     'pickup_station' => $data['pickup_station'] ?? null,
@@ -186,11 +217,11 @@ class OrderController extends Controller
                     'notes' => $data['order_details']['notes'],
                 ]);
 
-                foreach ($data['sales'] as $sale) {
+                foreach ($processedSales as $sale) {
                     Sale::create([
                         'order_id' => $order->id,
                         'product_id' => $sale['id'],
-                        'product_variation_id' => $sale['variation'] ?? null,
+                        'product_variation_id' => $sale['variation'],
                         'quantity' => $sale['quantity'],
                         'price' => $sale['price'],
                         'total' => $sale['price'] * $sale['quantity'],

@@ -56,8 +56,15 @@ class PaymentController extends Controller
                     'message' => 'Failed to authenticate with M-Pesa. Please check credentials.'
                 ], 500);
             }
-            logger($request->amount);
-            logger($contact);
+            $order = Order::where('slug', $request->order_id)->first();
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found.'
+                ], 404);
+            }
+            
+            $actualAmount = $order->total;
 
 
             $response = $client->request('POST', 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest', [
@@ -70,7 +77,7 @@ class PaymentController extends Controller
                     "Password" => $password,
                     "Timestamp" => $timestamp,
                     "TransactionType" => "CustomerBuyGoodsOnline",
-                    "Amount" => round($request->amount),
+                    "Amount" => round($actualAmount),
                     "PartyA" => $contact,
                     "PartyB" => $this->till,
                     "PhoneNumber" => $contact,
@@ -90,12 +97,11 @@ class PaymentController extends Controller
                 'result_desc' => $jsonResponse->ResponseDescription ?? null,
                 'merchant_request_id' => $jsonResponse->MerchantRequestID ?? null,
                 'phone' => $contact,
-                'amount' => $request->amount,
+                'amount' => $actualAmount,
                 'account_reference' => $request->order_id,
             ]);
 
             if (($jsonResponse->ResponseCode ?? '') == "0") {
-                logger('Payment prompt sent to ' . $contact);
                 return response()->json([
                     'success' => true,
                     'ResponseCode' => $jsonResponse->ResponseCode,
@@ -126,9 +132,17 @@ class PaymentController extends Controller
     }
     public function mpesaCallback(Request $request)
     {
+        // IP Allowlisting for Safaricom (in production)
+        if (config('app.env') === 'production') {
+            $allowedIps = explode(',', str_replace(' ', '', config('app.MPESA_ALLOWED_IPS', '196.201.214.200,196.201.214.206,196.201.213.114,196.201.214.207,196.201.214.208,196.201.213.44,196.201.212.127,196.201.212.138,196.201.212.129,196.201.212.136,196.201.212.74,196.201.212.69')));
+            $ip = $request->ip();
+            if (!in_array($ip, $allowedIps)) {
+                logger("M-Pesa Callback from unauthorized IP: $ip");
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+        }
+
         $payload = $request->all();
-        logger('M-Pesa Callback received:');
-        logger('M-Pesa Callback:', $payload);
 
         try {
             $body = $payload['Body']['stkCallback'] ?? null;

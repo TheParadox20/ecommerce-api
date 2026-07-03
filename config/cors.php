@@ -19,7 +19,13 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:3000'), 'http://localhost:3001', 'https://admin.ngwindsongk.com', '*'],
+    'allowed_origins' => [
+        env('FRONTEND_URL', 'http://localhost:3000'),
+        'http://localhost:3001',
+        'https://ngwindsongk.com',
+        'https://www.ngwindsongk.com',
+        'https://admin.ngwindsongk.com',
+    ],
 
     'allowed_origins_patterns' => [],
 

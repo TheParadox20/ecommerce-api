@@ -100,7 +100,7 @@ Route::post('/cart/merge-guest', [CartController::class, 'mergeGuestCart']);
 // Blog Public Routes
 Route::get('/blogs', [BlogController::class, 'index']);
 Route::get('/blogs/{slug}', [BlogController::class, 'show']);
-Route::post('/blogs/{id}/comments', [BlogController::class, 'storeComment']);
+Route::post('/blogs/{id}/comments', [BlogController::class, 'storeComment'])->middleware('throttle:60,1');
 
 // Settings, Testimonials, Banners Public
 Route::get('/settings', [SettingController::class, 'index']);
@@ -152,22 +152,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
         Route::apiResource('/admin/vouchers', VoucherController::class);
         
         // System Maintenance
-        Route::get('/run-migrations', function () {
-            Artisan::call('migrate', ['--force' => true]);
-            return Artisan::output();
-        });
-        Route::get('/run-seeder', function (Request $request) {
-            $class = $request->query('class', 'DatabaseSeeder');
-            Artisan::call('db:seed', ['--class' => $class, '--force' => true]);
-            return Artisan::output();
-        });
-        Route::get('/clear-cache', function () {
-            Artisan::call('config:clear');
-            Artisan::call('route:clear');
-            Artisan::call('view:clear');
-            Artisan::call('cache:clear');
-            return "✅ All caches cleared successfully!\n\n" . Artisan::output();
-        });
+        // Removed dangerous maintenance routes from API. Use php artisan directly on the server instead.
     });
 
     // Analytics Stats (All Admins)
