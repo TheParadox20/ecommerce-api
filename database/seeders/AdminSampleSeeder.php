@@ -17,7 +17,7 @@ class AdminSampleSeeder extends Seeder
         // 1. Ensure core roles exist
         $roles = ['super_admin', 'admin', 'distributor', 'influencer', 'buyer'];
         foreach ($roles as $role) {
-            Role::findOrCreate($role);
+            Role::findOrCreate($role, 'sanctum');
         }
 
         $password = Hash::make('password');

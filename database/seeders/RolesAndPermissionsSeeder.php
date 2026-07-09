@@ -52,6 +52,10 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdmin = Role::firstOrCreate(['name' => 'super_admin', 'guard_name' => 'sanctum']);
         $superAdmin->syncPermissions(Permission::where('guard_name', 'sanctum')->get());
 
+        // Admin — gets every permission except manage admins
+        $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'sanctum']);
+        $admin->syncPermissions(Permission::where('guard_name', 'sanctum')->where('name', '!=', 'manage admins')->get());
+
         // Buyer — storefront customer
         $buyer = Role::firstOrCreate(['name' => 'buyer', 'guard_name' => 'sanctum']);
         $buyer->syncPermissions([
