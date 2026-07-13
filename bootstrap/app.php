@@ -25,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'idempotent' => \App\Http\Middleware\IdempotencyMiddleware::class,
+            // Prevent browsers/CDNs from caching product prices & discounts
+            'no-cache-products' => \App\Http\Middleware\NoCacheProducts::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

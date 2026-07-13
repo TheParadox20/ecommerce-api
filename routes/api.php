@@ -78,17 +78,20 @@ Route::get('/test/books', [TestController::class, 'books']);
 Route::get('/test/session', [TestController::class, 'testSession']);
 Route::get('/sms', [MessageController::class, 'sendSMS']);
 //product related routes
-// Public API Resource routes for ecommerce models (Read-only for most)
-Route::apiResource('products', ProductController::class)->only(['index', 'show']);
-Route::apiResource('product-variations', App\Http\Controllers\ProductVariationController::class)->only(['index', 'show']);
-Route::apiResource('attributes', App\Http\Controllers\AttributeController::class)->only(['index', 'show']);
-Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueController::class)->only(['index', 'show']);
-Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class)->only(['index', 'show']);
-Route::apiResource('product-faqs', App\Http\Controllers\ProductFAQController::class)->only(['index', 'show']);
-Route::apiResource('categories', App\Http\Controllers\CategoryController::class)->only(['index', 'show']);
-Route::apiResource('brands', App\Http\Controllers\BrandController::class)->only(['index', 'show']);
-Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class)->only(['index', 'show']);
-Route::apiResource('recipes', RecipeController::class)->only(['index', 'show']);
+// Public read-only routes — wrapped in no-cache-products so price/discount
+// updates made in the admin are always immediately visible to shoppers.
+Route::middleware('no-cache-products')->group(function () {
+    Route::apiResource('products', ProductController::class)->only(['index', 'show']);
+    Route::apiResource('product-variations', App\Http\Controllers\ProductVariationController::class)->only(['index', 'show']);
+    Route::apiResource('attributes', App\Http\Controllers\AttributeController::class)->only(['index', 'show']);
+    Route::apiResource('attribute-values', App\Http\Controllers\AttributeValueController::class)->only(['index', 'show']);
+    Route::apiResource('product-images', App\Http\Controllers\ProductImageController::class)->only(['index', 'show']);
+    Route::apiResource('product-faqs', App\Http\Controllers\ProductFAQController::class)->only(['index', 'show']);
+    Route::apiResource('categories', App\Http\Controllers\CategoryController::class)->only(['index', 'show']);
+    Route::apiResource('brands', App\Http\Controllers\BrandController::class)->only(['index', 'show']);
+    Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class)->only(['index', 'show']);
+    Route::apiResource('recipes', RecipeController::class)->only(['index', 'show']);
+});
 
 // Orders (Public can create, but index/show/update/destroy are protected)
 Route::post('/orders', [App\Http\Controllers\OrderController::class, 'store'])->middleware('idempotent');
