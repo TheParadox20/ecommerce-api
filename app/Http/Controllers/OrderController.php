@@ -157,14 +157,18 @@ class OrderController extends Controller
                             throw new Exception("Insufficient stock for product variation. Requested: {$sale['quantity']}, Available: " . ($variation ? $variation->stock : 0));
                         }
                         $variation->decrement('stock', $sale['quantity']);
-                        $actualPrice = $variation->price;
+                        // Apply variation-level discount if present
+                        $discount = floatval($variation->discount ?? 0);
+                        $actualPrice = max(0, floatval($variation->price) - $discount);
                     } else {
                         $product = Product::where('id', $sale['id'])->lockForUpdate()->first();
                         if (!$product || $product->stock < $sale['quantity']) {
                             throw new Exception("Insufficient stock for product. Requested: {$sale['quantity']}, Available: " . ($product ? $product->stock : 0));
                         }
                         $product->decrement('stock', $sale['quantity']);
-                        $actualPrice = $product->price;
+                        // Apply product-level discount if present
+                        $discount = floatval($product->discount ?? 0);
+                        $actualPrice = max(0, floatval($product->price) - $discount);
                     }
                     
                     $processedSales[] = [
