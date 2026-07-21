@@ -33,6 +33,7 @@ use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\InfluencerController;
 use App\Http\Controllers\PageViewController;
+use App\Http\Controllers\CacheController;
 
 Route::get('/nav-menus', [NavMenuController::class, 'index']);
 
@@ -160,6 +161,9 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
 
     // Analytics Stats (All Admins)
     Route::get('/admin/pageviews/stats', [PageViewController::class, 'stats']);
+
+    // System Cache Management
+    Route::post('/admin/clear-cache', [CacheController::class, 'clearCache']);
 
     // General Admin Routes (Content Management)
     // Admin Recipe Routes
