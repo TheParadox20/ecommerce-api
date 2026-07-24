@@ -265,8 +265,9 @@ class PaymentController extends Controller
             ], 400);
         }
 
-        // Keep status as 'pending' but set the reference so the Admin knows it awaits verification
+        // Update status to 'pending' and set the reference so the Admin knows it awaits verification
         $order->update([
+            'payment_status' => 'pending',
             'payment_reference' => strtoupper(trim($request->receipt_number))
         ]);
 
