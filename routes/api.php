@@ -238,6 +238,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
     Route::apiResource('descriptions', App\Http\Controllers\DescriptionController::class)->except(['index', 'show']);
     Route::apiResource('orders', App\Http\Controllers\OrderController::class)->except(['store']);
     Route::post('/admin/orders/{id}/verify-payment', [App\Http\Controllers\SalesController::class, 'verifyPayment']);
+    Route::post('/admin/maintenance/fix-manual-orders', [App\Http\Controllers\SalesController::class, 'fixManualOrders']);
     Route::apiResource('sales', App\Http\Controllers\SalesController::class);
     Route::apiResource('shipments', App\Http\Controllers\ShipmentController::class);
     Route::get('/admin/mpesa-payments', [PaymentController::class, 'adminIndex']);

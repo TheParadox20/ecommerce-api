@@ -137,6 +137,24 @@ class SalesController extends Controller
         ]);
     }
 
+    /**
+     * One-time maintenance route: retroactively fixes old manual orders
+     * that have a payment_reference but a NULL payment_status.
+     * Protected by admin middleware. Safe to call multiple times (idempotent).
+     */
+    public function fixManualOrders()
+    {
+        $count = Order::whereNull('payment_status')
+            ->whereNotNull('payment_reference')
+            ->update(['payment_status' => 'pending']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Fixed {$count} order(s). They are now visible in the Sales Dashboard.",
+            'updated_count' => $count,
+        ]);
+    }
+
     private function applyOrderFilters(Builder|Relation $query, Request $request): void
     {
         // ─── Sales Intelligence baseline filter ───────────────────────────────────
