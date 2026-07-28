@@ -81,9 +81,15 @@
                                                             <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->pickup_station ?? 'N/A' }}</td>
                                                         </tr>
                                                         @else
+                                                            @if($order->delivery_county)
+                                                            <tr>
+                                                                <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">County</td>
+                                                                <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">{{ $order->delivery_county }}</td>
+                                                            </tr>
+                                                            @endif
                                                             @if($order->delivery_zone)
                                                             <tr>
-                                                                <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Zone</td>
+                                                                <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Town</td>
                                                                 <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">
                                                                     {{ $order->delivery_zone }}
                                                                     @php

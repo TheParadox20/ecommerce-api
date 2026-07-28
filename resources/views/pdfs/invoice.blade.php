@@ -76,8 +76,11 @@
                         @else
                             <div class="value">
                                 Method: Standard Delivery<br>
+                                @if(!empty($order->delivery_county))
+                                    County: {{ $order->delivery_county }}<br>
+                                @endif
                                 @if(!empty($order->delivery_zone))
-                                    Zone: {{ $order->delivery_zone }}<br>
+                                    Town: {{ $order->delivery_zone }}<br>
                                     @php
                                         $location = \App\Models\Location::where('name', $order->delivery_zone)->first();
                                     @endphp
