@@ -8,6 +8,8 @@ use App\Models\Mpesa;
 use App\Models\Order;
 use App\Events\OrderPaymentSuccessful;
 use App\Events\OrderPaymentFailed;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NewOrderReceived;
 
 class PaymentController extends Controller
 {
@@ -266,10 +268,46 @@ class PaymentController extends Controller
         }
 
         // Update status to 'pending' and set the reference so the Admin knows it awaits verification
+        $receiptNumber = strtoupper(trim($request->receipt_number));
         $order->update([
             'payment_status' => 'pending',
-            'payment_reference' => strtoupper(trim($request->receipt_number))
+            'payment_reference' => $receiptNumber
         ]);
+
+        // 1. Dispatch SMS Alert to Admin Numbers
+        try {
+            $client = new Client();
+            $apiKey = config('app.TIARA_KEY');
+            $smsMessage = "MANUAL PAYMENT SUBMITTED | Order #{$order->slug} | Receipt: {$receiptNumber} | Amount: KES " . number_format($order->total) . ". Please verify on admin panel.";
+            $adminRecipients = ['254791210705', '254718156421', '254113748906', '254721815617'];
+
+            foreach ($adminRecipients as $to) {
+                try {
+                    $client->post('https://api2.tiaraconnect.io/api/messaging/sendsms', [
+                        'headers' => [
+                            'Content-Type' => 'application/json',
+                            'Authorization' => 'Bearer ' . $apiKey,
+                        ],
+                        'json' => [
+                            'to' => $to,
+                            'from' => 'TIARACONECT',
+                            'message' => $smsMessage,
+                        ],
+                    ]);
+                } catch (\Exception $e) {
+                    logger("Admin manual receipt SMS error | msisdn: $to | " . $e->getMessage());
+                }
+            }
+        } catch (\Exception $e) {
+            logger('Manual receipt SMS dispatch failed: ' . $e->getMessage());
+        }
+
+        // 2. Dispatch Email Alert to Admin Team
+        try {
+            Mail::to([config('mail.from.address'), 'jennifer@ngwindsong.com'])->send(new NewOrderReceived($order));
+        } catch (\Exception $e) {
+            logger('Manual receipt admin email failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,

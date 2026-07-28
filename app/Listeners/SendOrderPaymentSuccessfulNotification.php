@@ -22,7 +22,7 @@ class SendOrderPaymentSuccessfulNotification
         // 1. Send Email to Admin and Buyer
         try {
             // Admin receives NewOrderReceived (Premium template + Invoice)
-            Mail::to(config('mail.from.address'))->send(new NewOrderReceived($order));
+            Mail::to([config('mail.from.address'), 'jennifer@ngwindsong.com'])->send(new NewOrderReceived($order));
 
             // Buyer receives OrderNotification (Simple template + Invoice)
             if ($order->orderDetail && $order->orderDetail->email) {
@@ -36,7 +36,7 @@ class SendOrderPaymentSuccessfulNotification
         // 2. Send Admin SMS notification (payment confirmed)
         try {
             $message = $order->slug . ' - Payment CONFIRMED. Total: KES ' . number_format($order->total) . '. Ref: ' . ($order->payment_reference ?? 'N/A') . '. Check admin panel.';
-            $adminRecipients = ['254791210705', '254718156421', '254113748906'];
+            $adminRecipients = ['254791210705', '254718156421', '254113748906', '254721815617'];
 
             foreach ($adminRecipients as $to) {
                 try {
