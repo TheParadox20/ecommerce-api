@@ -87,6 +87,7 @@ class OrderController extends Controller
             'pickup_station' => 'nullable|string',
             'shipping' => 'nullable|numeric',
             'delivery_zone' => 'nullable|string',
+            'delivery_county_id' => 'nullable|exists:locations,id',
         ]);
 
         $orderType = 'b2c';
@@ -211,6 +212,26 @@ class OrderController extends Controller
                     'shipping' => $data['shipping'] ?? 0,
                     'delivery_zone' => $data['delivery_zone'] ?? null,
                 ]);
+
+                // Auto-save unknown town/urban center to logistics zones database for future reference
+                if (!empty($data['delivery_county_id']) && !empty($data['delivery_zone'])) {
+                    $countyId = $data['delivery_county_id'];
+                    $townName = trim($data['delivery_zone']);
+                    
+                    $existingTown = \App\Models\Location::where('parent_id', $countyId)
+                        ->whereRaw('LOWER(name) = ?', [mb_strtolower($townName)])
+                        ->first();
+
+                    if (!$existingTown) {
+                        $parentCounty = \App\Models\Location::find($countyId);
+                        \App\Models\Location::create([
+                            'name' => $townName,
+                            'short_name' => $townName,
+                            'parent_id' => $countyId,
+                            'delivery_fee' => $data['shipping'] ?? ($parentCounty ? $parentCounty->delivery_fee : null),
+                        ]);
+                    }
+                }
 
                 OrderDetail::create([
                     'order_id' => $order->id,
