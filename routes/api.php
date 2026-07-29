@@ -267,6 +267,6 @@ Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware('i
 Route::get('/pay/mpesa/status/{order_id}', [PaymentController::class, 'checkStatus']);
 Route::post('/pay/mpesa/manual-receipt', [PaymentController::class, 'submitManualReceipt']);
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
-Route::post('/mpesa/validation', [PaymentController::class, 'mpesaValidation']);
-Route::post('/mpesa/confirmation', [PaymentController::class, 'mpesaConfirmation']);
+Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
+Route::post('/payments/confirmation', [PaymentController::class, 'mpesaConfirmation']);
 // System maintenance routes moved to super_admin group
