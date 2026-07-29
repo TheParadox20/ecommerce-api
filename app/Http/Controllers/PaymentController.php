@@ -335,22 +335,22 @@ class PaymentController extends Controller
     /**
      * M-Pesa C2B Confirmation Callback
      * Called by Safaricom after a transaction has been successfully completed.
-     * BillRefNumber maps to the order slug.
+     * BillRefNumber maps to the order slug. Automatically marks the order as paid.
      */
     public function mpesaConfirmation(Request $request)
     {
         $payload = $request->all();
 
         // Map BillRefNumber → order slug
-        $orderSlug       = $payload['BillRefNumber']   ?? null;
-        $transactionId   = $payload['TransID']          ?? null;
-        $transactionType = $payload['TransactionType']  ?? null;
-        $transTime       = $payload['TransTime']        ?? null;
-        $amount          = $payload['TransAmount']      ?? null;
+        $orderSlug       = $payload['BillRefNumber']    ?? null;
+        $transactionId   = $payload['TransID']           ?? null;
+        $transactionType = $payload['TransactionType']   ?? null;
+        $transTime       = $payload['TransTime']         ?? null;
+        $amount          = $payload['TransAmount']       ?? null;
         $shortCode       = $payload['BusinessShortCode'] ?? null;
         $orgBalance      = $payload['OrgAccountBalance'] ?? null;
-        $msisdn          = $payload['MSISDN']           ?? null;
-        $firstName       = $payload['FirstName']        ?? null;
+        $msisdn          = $payload['MSISDN']            ?? null;
+        $firstName       = $payload['FirstName']         ?? null;
 
         $order = $orderSlug ? Order::where('slug', $orderSlug)->first() : null;
 
@@ -360,14 +360,32 @@ class PaymentController extends Controller
             'TransTime'          => $transTime,
             'TransAmount'        => $amount,
             'BusinessShortCode'  => $shortCode,
-            'BillRefNumber'      => $orderSlug,        // account number entered = order slug
+            'BillRefNumber'      => $orderSlug,
             'OrgAccountBalance'  => $orgBalance,
             'MSISDN'             => $msisdn,
             'FirstName'          => $firstName,
             'order_found'        => $order ? true : false,
             'order_id'           => $order?->id,
-            'order_status'       => $order?->payment_status,
+            'order_status_before' => $order?->payment_status,
         ]);
+
+        if ($order) {
+            // Only update if not already marked as success (idempotent)
+            if ($order->payment_status !== 'success') {
+                $order->update([
+                    'payment_status'    => 'success',
+                    'payment_reference' => $transactionId,
+                ]);
+
+                OrderPaymentSuccessful::dispatch($order);
+
+                Log::info("M-Pesa Confirmation | Order '{$orderSlug}' marked as PAID | TransID: {$transactionId} | Amount: {$amount}");
+            } else {
+                Log::info("M-Pesa Confirmation | Order '{$orderSlug}' already marked as paid. Skipping. | TransID: {$transactionId}");
+            }
+        } else {
+            Log::warning("M-Pesa Confirmation | Order not found for BillRefNumber: '{$orderSlug}' | TransID: {$transactionId}");
+        }
 
         return response()->json([
             'ResultCode' => 0,
