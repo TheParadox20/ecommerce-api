@@ -335,10 +335,39 @@ class PaymentController extends Controller
     /**
      * M-Pesa C2B Confirmation Callback
      * Called by Safaricom after a transaction has been successfully completed.
+     * BillRefNumber maps to the order slug.
      */
     public function mpesaConfirmation(Request $request)
     {
-        Log::info('M-Pesa Confirmation Callback received', $request->all());
+        $payload = $request->all();
+
+        // Map BillRefNumber → order slug
+        $orderSlug       = $payload['BillRefNumber']   ?? null;
+        $transactionId   = $payload['TransID']          ?? null;
+        $transactionType = $payload['TransactionType']  ?? null;
+        $transTime       = $payload['TransTime']        ?? null;
+        $amount          = $payload['TransAmount']      ?? null;
+        $shortCode       = $payload['BusinessShortCode'] ?? null;
+        $orgBalance      = $payload['OrgAccountBalance'] ?? null;
+        $msisdn          = $payload['MSISDN']           ?? null;
+        $firstName       = $payload['FirstName']        ?? null;
+
+        $order = $orderSlug ? Order::where('slug', $orderSlug)->first() : null;
+
+        Log::info('M-Pesa Confirmation Callback received', [
+            'TransactionType'    => $transactionType,
+            'TransID'            => $transactionId,
+            'TransTime'          => $transTime,
+            'TransAmount'        => $amount,
+            'BusinessShortCode'  => $shortCode,
+            'BillRefNumber'      => $orderSlug,        // account number entered = order slug
+            'OrgAccountBalance'  => $orgBalance,
+            'MSISDN'             => $msisdn,
+            'FirstName'          => $firstName,
+            'order_found'        => $order ? true : false,
+            'order_id'           => $order?->id,
+            'order_status'       => $order?->payment_status,
+        ]);
 
         return response()->json([
             'ResultCode' => 0,
