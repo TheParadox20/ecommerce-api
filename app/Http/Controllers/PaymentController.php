@@ -10,6 +10,7 @@ use App\Events\OrderPaymentSuccessful;
 use App\Events\OrderPaymentFailed;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\NewOrderReceived;
+use Illuminate\Support\Facades\Log;
 
 class PaymentController extends Controller
 {
@@ -135,6 +136,7 @@ class PaymentController extends Controller
     public function mpesaCallback(Request $request)
     {
         // IP Allowlisting for Safaricom (in production)
+        Log::info('M-Pesa Callback received: ' . json_encode($request->all()));
         if (config('app.env') === 'production') {
             $allowedIps = explode(',', str_replace(' ', '', config('app.MPESA_ALLOWED_IPS', '196.201.214.200,196.201.214.206,196.201.213.114,196.201.214.207,196.201.214.208,196.201.213.44,196.201.212.127,196.201.212.138,196.201.212.129,196.201.212.136,196.201.212.74,196.201.212.69')));
             $ip = $request->ip();
