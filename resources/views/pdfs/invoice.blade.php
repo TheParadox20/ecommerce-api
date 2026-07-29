@@ -144,7 +144,7 @@
         </div>
 
         <div class="footer">
-            Thank you for your business. For any queries, please contact us at sales@ngwindsongk.com<br>
+            Thank you for your business. For any queries, please contact us at sales@ngwindsongk.com or call 0113748906 / 0718156421.<br>
             @if($order->expected_shipping_date)
                 Expected Shipment Date is {{ \Illuminate\Support\Carbon::parse($order->expected_shipping_date)->format('l, M d, Y') }}.
             @endif
