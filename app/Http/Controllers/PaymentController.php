@@ -316,4 +316,33 @@ class PaymentController extends Controller
             'message' => 'Receipt submitted successfully. Awaiting verification.'
         ]);
     }
+
+    /**
+     * M-Pesa C2B Validation Callback
+     * Called by Safaricom before a transaction is accepted.
+     * Respond with ResultCode 0 to accept, or non-zero to reject.
+     */
+    public function mpesaValidation(Request $request)
+    {
+        Log::info('M-Pesa Validation Callback received', $request->all());
+
+        return response()->json([
+            'ResultCode' => 0,
+            'ResultDesc' => 'Accepted',
+        ]);
+    }
+
+    /**
+     * M-Pesa C2B Confirmation Callback
+     * Called by Safaricom after a transaction has been successfully completed.
+     */
+    public function mpesaConfirmation(Request $request)
+    {
+        Log::info('M-Pesa Confirmation Callback received', $request->all());
+
+        return response()->json([
+            'ResultCode' => 0,
+            'ResultDesc' => 'Accepted',
+        ]);
+    }
 }
