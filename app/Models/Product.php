@@ -23,6 +23,8 @@ class Product extends Model
         'discount',
         'stock',
         'version',
+        'status',
+        'is_promoted',
     ];
     
     protected $casts = [
@@ -30,6 +32,7 @@ class Product extends Model
         'price' => 'decimal:2',
         'discount' => 'integer',
         'version' => 'integer',
+        'is_promoted' => 'boolean',
     ];
 
     public function updateOptimistically(array $attributes, $expectedVersion = null)

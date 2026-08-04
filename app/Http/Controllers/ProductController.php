@@ -134,6 +134,8 @@ class ProductController extends Controller
             'price' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
+            'status' => 'nullable|string|in:active,inactive,draft',
+            'is_promoted' => 'nullable|boolean',
         ]);
 
         try {
@@ -263,6 +265,8 @@ class ProductController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'stock' => 'nullable|integer|min:0',
             'version' => 'nullable|integer',
+            'status' => 'nullable|string|in:active,inactive,draft',
+            'is_promoted' => 'nullable|boolean',
         ]);
 
         try {
