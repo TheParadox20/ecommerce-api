@@ -24,6 +24,15 @@ class ProductController extends Controller
             'brand'
         ]);
 
+        // Filter by status: storefront queries only get active products unless all_statuses or per_page (admin) is passed
+        if ($request->filled('status')) {
+            $products->where('status', $request->status);
+        } else if (!$request->boolean('all_statuses') && !$request->has('per_page')) {
+            $products->where(function ($q) {
+                $q->where('status', 'active')->orWhereNull('status');
+            });
+        }
+
         // 🔎 Filter by category or brand
         if ($request->filled('category') && $request->filled('brand') && strtolower($request->category) === strtolower($request->brand)) {
             $slugValue = strtolower($request->category);
