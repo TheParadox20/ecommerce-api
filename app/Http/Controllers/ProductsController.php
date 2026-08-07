@@ -11,6 +11,7 @@ use App\Models\Media;
 use App\Models\ProductFAQ;
 use App\Models\Description;
 use App\Models\Variation;
+use Illuminate\Support\Str;
 
 class ProductsController extends Controller
 {
@@ -108,12 +109,14 @@ class ProductsController extends Controller
                     logger("Files saved upto file :: $i");
                     break;
                 }
-                $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
+                $folderName = $product->slug ?: Str::slug($product->name);
+                if (empty($folderName)) $folderName = (string) $product->id;
+                $destinationPath = public_path("storage/products/") . $folderName;
                 if (!file_exists($destinationPath)) mkdir($destinationPath, 0755, true);
 
                 $name = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
                 $file->move($destinationPath, $name);
-                $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
+                $url = url("storage/products/". $folderName ."/" . $name);
                 Media::create([
                     'product_id'=>$request->id,
                     'purpose'=>'description',
@@ -157,12 +160,14 @@ class ProductsController extends Controller
                     logger("Media Files saved upto file :: $i");
                     break;
                 }
-                $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
+                $folderName = $product->slug ?: Str::slug($product->name);
+                if (empty($folderName)) $folderName = (string) $product->id;
+                $destinationPath = public_path("storage/products/") . $folderName;
                 if (!file_exists($destinationPath)) mkdir($destinationPath, 0755, true);
 
                 $name = time() . '_' . str_replace(' ', '_', $file->getClientOriginalName());
                 $file->move($destinationPath, $name);
-                $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $name);
+                $url = url("storage/products/". $folderName ."/" . $name);
                 Media::create([
                     'product_id'=>$request->id,
                     'purpose'=>'media',

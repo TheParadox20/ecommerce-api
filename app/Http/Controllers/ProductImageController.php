@@ -7,11 +7,13 @@ use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ProductImageController extends Controller
 {
     public static function media($product, $media){
-        return url("products/".str_replace(' ', '_', $product))."/" . str_replace(' ', '_', $media);
+        $folder = Str::slug($product);
+        return url("products/" . ($folder ?: 'general')) . "/" . str_replace(' ', '_', $media);
     }
     public function index(Request $request)
     {
@@ -70,13 +72,21 @@ class ProductImageController extends Controller
                 
                 $hasExistingPrimary = ProductImage::where('product_id', $product->id)->where('is_primary', true)->exists();
 
+                $folderName = $product->slug ?: Str::slug($product->name);
+                if (empty($folderName)) {
+                    $folderName = (string) $product->id;
+                }
+                $destinationPath = public_path("storage/products/") . $folderName;
+                if (!file_exists($destinationPath)) {
+                    mkdir($destinationPath, 0755, true);
+                }
+
                 foreach ($mediaFiles as $index => $file) {
                     if($file && $file->isValid()){
-                        $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
                         $name = str_replace(' ', '_', $file->getClientOriginalName());
                         $uniqueName = time() . '_' . substr($name, -150); // prevent too long names
                         $file->move($destinationPath, $uniqueName);
-                        $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $uniqueName);
+                        $url = url("storage/products/" . $folderName . "/" . $uniqueName);
                         
                         $isPrimary = $request->is_primary === 'true' || (!$hasExistingPrimary && $index === 0 && count($imagesResponse) === 0);
 
