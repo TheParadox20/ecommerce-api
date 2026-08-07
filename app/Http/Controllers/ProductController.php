@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -134,7 +135,7 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|unique:products,name',
+            'name' => ['required', 'string', Rule::unique('products', 'name')->whereNull('deleted_at')],
             'category' => 'required|string',
             'category_id' => 'sometimes|exists:categories,id',
             'brand' => 'nullable|string',
@@ -264,7 +265,7 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|unique:products,name,' . $id,
+            'name' => ['sometimes', 'string', Rule::unique('products', 'name')->ignore($id)->whereNull('deleted_at')],
             'category' => 'sometimes|string',
             'category_id' => 'sometimes|exists:categories,id',
             'brand' => 'nullable|string',
