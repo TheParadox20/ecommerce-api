@@ -169,8 +169,8 @@ class ProductController extends Controller
                 unset($validated['category']);
             }
 
-            // Generate slug automatically
-            $validated['slug'] = Str::slug($validated['name']);
+            // Generate slug automatically (handling soft-deleted conflicts)
+            $validated['slug'] = $this->generateUniqueSlug($validated['name']);
 
             $product = Product::create($validated);
 
@@ -194,7 +194,7 @@ class ProductController extends Controller
                                     'product_id' => $product->id,
                                     'attribute_name' => $attributeName,
                                     'attribute_value' => $attributeValue,
-                                    'sku' => strtoupper(\Illuminate\Support\Str::slug($product->name . '-' . $attributeValue)),
+                                    'sku' => $this->generateUniqueSku($product->name, $attributeValue, $product->id),
                                     'price' => $details['price'] ?? $product->price ?? 0,
                                     'stock' => $details['stock'] ?? 0,
                                     'discount' => $details['discount'] ?? null,
@@ -303,7 +303,7 @@ class ProductController extends Controller
             }
 
             if (isset($validated['name'])) {
-                $validated['slug'] = Str::slug($validated['name']);
+                $validated['slug'] = $this->generateUniqueSlug($validated['name'], $product->id);
             }
 
             // Remove version from validated array if present, as updateOptimistically handles it internally
@@ -337,7 +337,7 @@ class ProductController extends Controller
                     if (is_array($values)) {
                         foreach ($values as $attributeValue => $details) {
                             if (is_array($details)) {
-                                $sku = strtoupper(\Illuminate\Support\Str::slug($product->name . '-' . $attributeValue));
+                                $sku = $this->generateUniqueSku($product->name, $attributeValue, $product->id);
                                 $existingSkus[] = $sku;
                                 \App\Models\ProductVariation::updateOrCreate(
                                     [
@@ -432,5 +432,82 @@ class ProductController extends Controller
             ->get();
 
         return response()->json($related);
+    }
+
+    /**
+     * Generate a unique slug for a product, resolving conflicts with soft-deleted or existing products.
+     *
+     * @param string $name
+     * @param int|null $ignoreId
+     * @return string
+     */
+    protected function generateUniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $baseSlug = Str::slug($name);
+        if (empty($baseSlug)) {
+            $baseSlug = 'product';
+        }
+
+        $slug = $baseSlug;
+        $count = 1;
+
+        while (true) {
+            $query = Product::withTrashed()->where('slug', $slug);
+            if ($ignoreId) {
+                $query->where('id', '!=', $ignoreId);
+            }
+            $existing = $query->first();
+
+            if (!$existing) {
+                return $slug;
+            }
+
+            if ($existing->trashed()) {
+                $existing->update([
+                    'slug' => 'deleted_' . $existing->id . '_' . $slug
+                ]);
+                return $slug;
+            }
+
+            $slug = $baseSlug . '-' . $count;
+            $count++;
+        }
+    }
+
+    /**
+     * Generate a unique SKU for a product variation, resolving conflicts with soft-deleted or existing variations.
+     *
+     * @param string $productName
+     * @param string $attributeValue
+     * @param int $productId
+     * @return string
+     */
+    protected function generateUniqueSku(string $productName, string $attributeValue, int $productId): string
+    {
+        $baseSku = strtoupper(Str::slug($productName . '-' . $attributeValue));
+        if (empty($baseSku)) {
+            $baseSku = 'SKU-' . $productId;
+        }
+
+        $sku = $baseSku;
+        $count = 1;
+
+        while (true) {
+            $existing = \App\Models\ProductVariation::where('sku', $sku)->first();
+
+            if (!$existing || $existing->product_id === $productId) {
+                return $sku;
+            }
+
+            if ($existing->product && $existing->product->trashed()) {
+                $existing->update([
+                    'sku' => 'DELETED_' . $existing->id . '_' . $sku
+                ]);
+                return $sku;
+            }
+
+            $sku = $baseSku . '-' . $count;
+            $count++;
+        }
     }
 }
