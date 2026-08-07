@@ -26,7 +26,8 @@ class ProductImageController extends Controller
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
             'product_variation_id' => 'nullable|exists:product_variations,id',
-            'media' => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'media' => 'sometimes',
+            'media.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:10240',
             'is_primary' => 'nullable|string', // Admin sends 'true' as string in FormData
             'kept_media_ids' => 'nullable|string'
         ]);
@@ -67,6 +68,8 @@ class ProductImageController extends Controller
             if ($request->hasFile('media')) {
                 $mediaFiles = is_array($request->file('media')) ? $request->file('media') : [$request->file('media')];
                 
+                $hasExistingPrimary = ProductImage::where('product_id', $product->id)->where('is_primary', true)->exists();
+
                 foreach ($mediaFiles as $index => $file) {
                     if($file && $file->isValid()){
                         $destinationPath = public_path("storage/products/") . str_replace(' ', '_', $product->name);
@@ -75,11 +78,13 @@ class ProductImageController extends Controller
                         $file->move($destinationPath, $uniqueName);
                         $url = url("storage/products/". str_replace(' ', '_', $product->name) ."/" . $uniqueName);
                         
+                        $isPrimary = $request->is_primary === 'true' || (!$hasExistingPrimary && $index === 0 && count($imagesResponse) === 0);
+
                         $image = ProductImage::create([
                             'product_id' => $product->id,
                             'product_variation_id' => $request->product_variation_id,
                             'url' => $url,
-                            'is_primary' => $request->is_primary === 'true' || (!isset($request->is_primary) && $index === 0 && count($imagesResponse) === 0)
+                            'is_primary' => $isPrimary
                         ]);
 
                         // Update variations that use this filename as a temporary identifier
