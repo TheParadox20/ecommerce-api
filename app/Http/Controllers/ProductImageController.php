@@ -29,7 +29,7 @@ class ProductImageController extends Controller
             'product_id' => 'required|exists:products,id',
             'product_variation_id' => 'nullable|exists:product_variations,id',
             'media' => 'sometimes',
-            'media.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp|max:10240',
+            'media.*' => 'nullable|file|max:10240',
             'is_primary' => 'nullable|string', // Admin sends 'true' as string in FormData
             'kept_media_ids' => 'nullable|string'
         ]);

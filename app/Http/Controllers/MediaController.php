@@ -16,7 +16,7 @@ class MediaController extends Controller
     {
         try {
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // 10MB max
+                'image' => 'required|file|max:10240', // 10MB max
                 'purpose' => 'nullable|string'
             ]);
 
