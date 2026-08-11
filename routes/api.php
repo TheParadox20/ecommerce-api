@@ -36,41 +36,8 @@ use App\Http\Controllers\PageViewController;
 use App\Http\Controllers\CacheController;
 use App\Http\Controllers\OfferController;
 
-use Illuminate\Support\Facades\Artisan;
-
 Route::get('/offers/active', [OfferController::class, 'indexActive']);
 Route::get('/offers/{id}/cart-payload', [OfferController::class, 'getBundleCartPayload']);
-
-/*
-|--------------------------------------------------------------------------
-| TEMPORARY MIGRATION RUNNER — DELETE AFTER USE
-|--------------------------------------------------------------------------
-| Access via browser: GET /api/run-migrations?secret=ngwindsongk-migrate-2026
-|--------------------------------------------------------------------------
-*/
-Route::get('/run-migrations', function (Request $request) {
-    $secret = env('MIGRATE_SECRET', 'ngwindsongk-migrate-2026');
-    $provided = $request->header('X-Migrate-Secret') ?? $request->query('secret');
-
-    if ($provided !== $secret) {
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    try {
-        Artisan::call('migrate', ['--force' => true]);
-        $output = Artisan::output();
-        return response()->json([
-            'success' => true,
-            'message' => 'Migrations ran successfully.',
-            'output'  => $output,
-        ]);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'success' => false,
-            'error'   => $e->getMessage(),
-        ], 500);
-    }
-});
 
 
 Route::get('/nav-menus', [NavMenuController::class, 'index']);
