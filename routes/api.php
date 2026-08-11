@@ -34,6 +34,44 @@ use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\InfluencerController;
 use App\Http\Controllers\PageViewController;
 use App\Http\Controllers\CacheController;
+use App\Http\Controllers\OfferController;
+
+use Illuminate\Support\Facades\Artisan;
+
+Route::get('/offers/active', [OfferController::class, 'indexActive']);
+Route::get('/offers/{id}/cart-payload', [OfferController::class, 'getBundleCartPayload']);
+
+/*
+|--------------------------------------------------------------------------
+| TEMPORARY MIGRATION RUNNER — DELETE AFTER USE
+|--------------------------------------------------------------------------
+| Access via browser: GET /api/run-migrations?secret=ngwindsongk-migrate-2026
+|--------------------------------------------------------------------------
+*/
+Route::get('/run-migrations', function (Request $request) {
+    $secret = env('MIGRATE_SECRET', 'ngwindsongk-migrate-2026');
+    $provided = $request->header('X-Migrate-Secret') ?? $request->query('secret');
+
+    if ($provided !== $secret) {
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        $output = Artisan::output();
+        return response()->json([
+            'success' => true,
+            'message' => 'Migrations ran successfully.',
+            'output'  => $output,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'error'   => $e->getMessage(),
+        ], 500);
+    }
+});
+
 
 Route::get('/nav-menus', [NavMenuController::class, 'index']);
 
@@ -216,6 +254,13 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
     Route::put('/admin/nav-menus/{id}', [NavMenuController::class, 'update']);
     Route::delete('/admin/nav-menus/{id}', [NavMenuController::class, 'destroy']);
     Route::post('/admin/nav-menus/reorder', [NavMenuController::class, 'reorder']);
+
+    // Admin Offer Bundles Routes
+    Route::get('/admin/offers', [OfferController::class, 'indexAdmin']);
+    Route::post('/admin/offers', [OfferController::class, 'store']);
+    Route::put('/admin/offers/{id}', [OfferController::class, 'update']);
+    Route::delete('/admin/offers/{id}', [OfferController::class, 'destroy']);
+
 
     // Global Media Hub
     Route::post('/admin/media/upload', [App\Http\Controllers\MediaController::class, 'upload']);

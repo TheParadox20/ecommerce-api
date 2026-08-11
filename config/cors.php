@@ -20,9 +20,8 @@ return [
     'allowed_methods' => ['*'],
 
     'allowed_origins' => array_filter([
-        env('FRONTEND_URL', 'http://localhost:3000'),
-        env('ADMIN_URL', 'http://localhost:3001'),
-        // Local dev origins (uncomment during local development if needed):
+        // env('FRONTEND_URL', 'http://localhost:3000'),  // local dev
+        // env('ADMIN_URL', 'http://localhost:3001'),     // local dev
         // 'http://localhost:3000',
         // 'http://localhost:3001',
         // 'http://127.0.0.1:3000',
