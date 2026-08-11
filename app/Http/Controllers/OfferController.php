@@ -237,7 +237,8 @@ class OfferController extends Controller
             if (!empty($chosenIdsNormalized)) {
                 // Choices provided: include required items + ONLY the explicitly chosen product(s)
                 foreach ($offer->items as $item) {
-                    $isRequired = empty($item->choice_group) || $item->is_required;
+                    $isChoice   = !empty($item->choice_group) || ($item->is_required !== null && !$item->is_required);
+                    $isRequired = !$isChoice;
                     $isChosen   = in_array((string)$item->product_id, $chosenIdsNormalized);
 
                     if ($isRequired || $isChosen) {
@@ -249,10 +250,13 @@ class OfferController extends Controller
                 // No choices provided: include required items + first item of each choice group as default
                 $processedChoiceGroups = [];
                 foreach ($offer->items as $item) {
-                    if (empty($item->choice_group) || $item->is_required) {
+                    $isChoice   = !empty($item->choice_group) || ($item->is_required !== null && !$item->is_required);
+                    $isRequired = !$isChoice;
+
+                    if ($isRequired) {
                         $itemsToInclude[] = $item;
                     } else {
-                        $groupId = $item->choice_group;
+                        $groupId = $item->choice_group ?: 'default_group';
                         if (!in_array($groupId, $processedChoiceGroups)) {
                             $itemsToInclude[] = $item;
                             $processedChoiceGroups[] = $groupId;
