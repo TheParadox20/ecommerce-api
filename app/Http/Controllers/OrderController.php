@@ -160,7 +160,8 @@ class OrderController extends Controller
                         $variation->decrement('stock', $sale['quantity']);
                         // Apply variation-level discount if present
                         $discount = floatval($variation->discount ?? 0);
-                        $actualPrice = max(0, floatval($variation->price) - $discount);
+                        $defaultPrice = max(0, floatval($variation->price) - $discount);
+                        $actualPrice = isset($sale['price']) ? floatval($sale['price']) : $defaultPrice;
                     } else {
                         $product = Product::where('id', $sale['id'])->lockForUpdate()->first();
                         if (!$product || $product->stock < $sale['quantity']) {
@@ -169,7 +170,8 @@ class OrderController extends Controller
                         $product->decrement('stock', $sale['quantity']);
                         // Apply product-level discount if present
                         $discount = floatval($product->discount ?? 0);
-                        $actualPrice = max(0, floatval($product->price) - $discount);
+                        $defaultPrice = max(0, floatval($product->price) - $discount);
+                        $actualPrice = isset($sale['price']) ? floatval($sale['price']) : $defaultPrice;
                     }
                     
                     $processedSales[] = [
