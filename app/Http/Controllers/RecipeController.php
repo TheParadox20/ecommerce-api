@@ -113,6 +113,11 @@ class RecipeController extends Controller
                 $request->merge(['instructions' => json_decode($request->instructions, true)]);
             }
 
+            if ($request->has('noindex')) {
+                $val = $request->noindex;
+                $request->merge(['noindex' => ($val === 'null' || $val === 'undefined' || $val === '' || is_null($val)) ? false : filter_var($val, FILTER_VALIDATE_BOOLEAN)]);
+            }
+
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'slug' => 'required|string|unique:recipes,slug',
@@ -175,6 +180,11 @@ class RecipeController extends Controller
             }
             if (is_string($request->instructions)) {
                 $request->merge(['instructions' => json_decode($request->instructions, true)]);
+            }
+
+            if ($request->has('noindex')) {
+                $val = $request->noindex;
+                $request->merge(['noindex' => ($val === 'null' || $val === 'undefined' || $val === '' || is_null($val)) ? false : filter_var($val, FILTER_VALIDATE_BOOLEAN)]);
             }
             
             $validated = $request->validate([

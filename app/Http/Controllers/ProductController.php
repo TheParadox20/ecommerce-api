@@ -134,6 +134,11 @@ class ProductController extends Controller
     */
     public function store(Request $request)
     {
+        if ($request->has('noindex')) {
+            $val = $request->noindex;
+            $request->merge(['noindex' => ($val === 'null' || $val === 'undefined' || $val === '' || is_null($val)) ? false : filter_var($val, FILTER_VALIDATE_BOOLEAN)]);
+        }
+
         $validated = $request->validate([
             'name' => ['required', 'string', Rule::unique('products', 'name')->whereNull('deleted_at')],
             'category' => 'required|string',
@@ -269,6 +274,11 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
+
+        if ($request->has('noindex')) {
+            $val = $request->noindex;
+            $request->merge(['noindex' => ($val === 'null' || $val === 'undefined' || $val === '' || is_null($val)) ? false : filter_var($val, FILTER_VALIDATE_BOOLEAN)]);
+        }
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', Rule::unique('products', 'name')->ignore($id)->whereNull('deleted_at')],

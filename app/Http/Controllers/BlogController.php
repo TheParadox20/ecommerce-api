@@ -143,6 +143,11 @@ class BlogController extends Controller
         if (is_string($request->brand_ids)) $request->merge(['brand_ids' => json_decode($request->brand_ids, true)]);
         if (is_string($request->product_ids)) $request->merge(['product_ids' => json_decode($request->product_ids, true)]);
 
+        if ($request->has('noindex')) {
+            $val = $request->noindex;
+            $request->merge(['noindex' => ($val === 'null' || $val === 'undefined' || $val === '' || is_null($val)) ? false : filter_var($val, FILTER_VALIDATE_BOOLEAN)]);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:255|unique:blogs,title',
             'excerpt' => 'nullable|string',
@@ -219,6 +224,11 @@ class BlogController extends Controller
         if (is_string($request->recipe_ids)) $request->merge(['recipe_ids' => json_decode($request->recipe_ids, true)]);
         if (is_string($request->brand_ids)) $request->merge(['brand_ids' => json_decode($request->brand_ids, true)]);
         if (is_string($request->product_ids)) $request->merge(['product_ids' => json_decode($request->product_ids, true)]);
+
+        if ($request->has('noindex')) {
+            $val = $request->noindex;
+            $request->merge(['noindex' => ($val === 'null' || $val === 'undefined' || $val === '' || is_null($val)) ? false : filter_var($val, FILTER_VALIDATE_BOOLEAN)]);
+        }
 
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255|unique:blogs,title,' . $id,
