@@ -127,7 +127,13 @@ class RecipeController extends Controller
                 'image' => 'nullable', // Can be string or file
                 'video_url' => 'nullable|string',
                 'product_ids' => 'nullable|array',
-                'product_ids.*' => 'exists:products,id'
+                'product_ids.*' => 'exists:products,id',
+                // SEO fields
+                'seo_title'       => 'nullable|string|max:70',
+                'seo_description' => 'nullable|string|max:165',
+                'seo_keywords'    => 'nullable|string|max:500',
+                'canonical_url'   => 'nullable|string|max:500',
+                'noindex'         => 'nullable|boolean',
             ]);
 
             if ($request->hasFile('image')) {
@@ -185,7 +191,13 @@ class RecipeController extends Controller
                 'image' => 'nullable', // can be string or file
                 'video_url' => 'nullable|string',
                 'product_ids' => 'nullable|array',
-                'product_ids.*' => 'exists:products,id'
+                'product_ids.*' => 'exists:products,id',
+                // SEO fields
+                'seo_title'       => 'nullable|string|max:70',
+                'seo_description' => 'nullable|string|max:165',
+                'seo_keywords'    => 'nullable|string|max:500',
+                'canonical_url'   => 'nullable|string|max:500',
+                'noindex'         => 'nullable|boolean',
             ]);
 
             if ($request->hasFile('image')) {

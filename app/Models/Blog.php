@@ -19,6 +19,17 @@ class Blog extends Model
         'youtube_url',
         'status',
         'allow_comments',
+        // SEO fields
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'canonical_url',
+        'noindex',
+    ];
+
+    protected $casts = [
+        'allow_comments' => 'boolean',
+        'noindex'        => 'boolean',
     ];
 
     protected $with = ['brands', 'products'];

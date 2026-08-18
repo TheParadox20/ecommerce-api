@@ -23,14 +23,21 @@ class Recipe extends Model
         'category',
         'status',
         'is_featured',
-        'views'
+        'views',
+        // SEO fields
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'canonical_url',
+        'noindex',
     ];
 
     protected $casts = [
-        'is_featured' => 'boolean',
-        'ingredients' => 'array',
+        'is_featured'  => 'boolean',
+        'ingredients'  => 'array',
         'instructions' => 'array',
-        'status' => 'string',
+        'status'       => 'string',
+        'noindex'      => 'boolean',
     ];
 
     public function products()

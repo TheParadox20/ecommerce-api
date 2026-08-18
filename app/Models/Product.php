@@ -25,14 +25,21 @@ class Product extends Model
         'version',
         'status',
         'is_promoted',
+        // SEO fields
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'canonical_url',
+        'noindex',
     ];
     
     protected $casts = [
-        'stock' => 'integer',
-        'price' => 'decimal:2',
-        'discount' => 'integer',
-        'version' => 'integer',
+        'stock'       => 'integer',
+        'price'       => 'decimal:2',
+        'discount'    => 'integer',
+        'version'     => 'integer',
         'is_promoted' => 'boolean',
+        'noindex'     => 'boolean',
     ];
 
     public function updateOptimistically(array $attributes, $expectedVersion = null)

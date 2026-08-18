@@ -157,6 +157,12 @@ class BlogController extends Controller
             'brand_ids.*' => 'exists:brands,id',
             'product_ids' => 'nullable|array',
             'product_ids.*' => 'exists:products,id',
+            // SEO fields
+            'seo_title'       => 'nullable|string|max:70',
+            'seo_description' => 'nullable|string|max:165',
+            'seo_keywords'    => 'nullable|string|max:500',
+            'canonical_url'   => 'nullable|string|max:500',
+            'noindex'         => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();
@@ -228,6 +234,12 @@ class BlogController extends Controller
             'brand_ids.*' => 'exists:brands,id',
             'product_ids' => 'nullable|array',
             'product_ids.*' => 'exists:products,id',
+            // SEO fields
+            'seo_title'       => 'nullable|string|max:70',
+            'seo_description' => 'nullable|string|max:165',
+            'seo_keywords'    => 'nullable|string|max:500',
+            'canonical_url'   => 'nullable|string|max:500',
+            'noindex'         => 'nullable|boolean',
         ]);
 
         DB::beginTransaction();

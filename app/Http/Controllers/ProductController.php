@@ -146,6 +146,12 @@ class ProductController extends Controller
             'stock' => 'nullable|integer|min:0',
             'status' => 'nullable|string|in:active,inactive,draft',
             'is_promoted' => 'nullable|boolean',
+            // SEO fields
+            'seo_title'       => 'nullable|string|max:70',
+            'seo_description' => 'nullable|string|max:165',
+            'seo_keywords'    => 'nullable|string|max:500',
+            'canonical_url'   => 'nullable|string|max:500',
+            'noindex'         => 'nullable|boolean',
         ]);
 
         try {
@@ -277,6 +283,12 @@ class ProductController extends Controller
             'version' => 'nullable|integer',
             'status' => 'nullable|string|in:active,inactive,draft',
             'is_promoted' => 'nullable|boolean',
+            // SEO fields
+            'seo_title'       => 'nullable|string|max:70',
+            'seo_description' => 'nullable|string|max:165',
+            'seo_keywords'    => 'nullable|string|max:500',
+            'canonical_url'   => 'nullable|string|max:500',
+            'noindex'         => 'nullable|boolean',
         ]);
 
         try {
