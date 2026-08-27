@@ -38,7 +38,11 @@ class LocationController extends Controller
             'name' => 'required|string',
             'parent_id' => 'required|exists:locations,id',
             'sacco_rider' => 'nullable|string',
+            'rider_name' => 'nullable|string',
+            'sacco_name' => 'nullable|string',
             'delivery_fee' => 'nullable|numeric|min:0',
+            'rider_fee' => 'nullable|numeric|min:0',
+            'sacco_fee' => 'nullable|numeric|min:0',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
@@ -65,7 +69,11 @@ class LocationController extends Controller
             'name' => 'sometimes|required|string',
             'parent_id' => 'sometimes|required|exists:locations,id',
             'sacco_rider' => 'nullable|string',
+            'rider_name' => 'nullable|string',
+            'sacco_name' => 'nullable|string',
             'delivery_fee' => 'nullable|numeric|min:0',
+            'rider_fee' => 'nullable|numeric|min:0',
+            'sacco_fee' => 'nullable|numeric|min:0',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
         ]);
@@ -77,6 +85,12 @@ class LocationController extends Controller
         // If delivery_fee is passed as an empty string, set it to null
         if ($request->has('delivery_fee') && $request->input('delivery_fee') === null) {
              $validated['delivery_fee'] = null;
+        }
+        if ($request->has('rider_fee') && $request->input('rider_fee') === null) {
+             $validated['rider_fee'] = null;
+        }
+        if ($request->has('sacco_fee') && $request->input('sacco_fee') === null) {
+             $validated['sacco_fee'] = null;
         }
 
         $location->update($validated);
@@ -110,9 +124,15 @@ class LocationController extends Controller
         $kenyaId = Location::where('name', 'Kenya')->value('id');
 
         $counties = Location::where('parent_id', $kenyaId)
-            ->with(['children' => fn($q) => $q->orderBy('name')])
+            ->with(['children' => fn($q) => $q->orderBy('name')->select([
+                'id', 'name', 'parent_id', 'delivery_fee', 'sacco_rider', 
+                'rider_fee', 'rider_name', 'sacco_fee', 'sacco_name'
+            ])])
             ->orderBy('name')
-            ->get(['id', 'name', 'delivery_fee', 'parent_id']);
+            ->get([
+                'id', 'name', 'delivery_fee', 'parent_id', 'sacco_rider',
+                'rider_fee', 'rider_name', 'sacco_fee', 'sacco_name'
+            ]);
 
         return response()->json([
             'success' => true,

@@ -17,7 +17,11 @@ class Location extends Model
         'longitude',
         'google_place_id',
         'delivery_fee',
+        'rider_fee',
+        'sacco_fee',
         'sacco_rider',
+        'rider_name',
+        'sacco_name',
     ];
 
     public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo

@@ -35,6 +35,9 @@ class Order extends Model
         'order_type',
         'shipping',
         'delivery_zone',
+        'delivery_county',
+        'carrier_type',
+        'carrier_name',
     ];
 
     public function updateOptimistically(array $attributes, $expectedVersion = null)

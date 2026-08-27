@@ -87,7 +87,10 @@ class OrderController extends Controller
             'pickup_station' => 'nullable|string',
             'shipping' => 'nullable|numeric',
             'delivery_zone' => 'nullable|string',
+            'delivery_county' => 'nullable|string',
             'delivery_county_id' => 'nullable|exists:locations,id',
+            'carrier_type' => 'nullable|string',
+            'carrier_name' => 'nullable|string',
         ]);
 
         $orderType = 'b2c';
@@ -213,6 +216,9 @@ class OrderController extends Controller
                     'order_type' => $orderType,
                     'shipping' => $data['shipping'] ?? 0,
                     'delivery_zone' => $data['delivery_zone'] ?? null,
+                    'delivery_county' => $data['delivery_county'] ?? null,
+                    'carrier_type' => $data['carrier_type'] ?? null,
+                    'carrier_name' => $data['carrier_name'] ?? null,
                 ]);
 
                 // Auto-save unknown town/urban center to logistics zones database for future reference

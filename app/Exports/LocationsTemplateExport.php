@@ -13,14 +13,22 @@ class LocationsTemplateExport implements FromArray, WithHeadings
             [
                 'Nairobi County',
                 'Westlands',
+                '300',
                 'Rider Joe',
                 '300',
+                'Rider Joe (0712345678)',
+                '200',
+                'Super Metro / Stage',
             ],
             [
                 'Kiambu County',
                 'Thika Town',
-                '2NK Sacco',
                 '450',
+                '2NK Sacco',
+                '',
+                '',
+                '',
+                '',
             ],
         ];
     }
@@ -30,8 +38,12 @@ class LocationsTemplateExport implements FromArray, WithHeadings
         return [
             'County',
             'Town/Urban Zone',
-            'SACCO/Rider',
             'Delivery Fee (KES)',
+            'SACCO/Rider',
+            'Rider Fee (KES)',
+            'Rider Name/Contact',
+            'SACCO Fee (KES)',
+            'SACCO Name/Stage',
         ];
     }
 }

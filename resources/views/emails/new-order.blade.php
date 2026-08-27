@@ -88,19 +88,23 @@
                                                             </tr>
                                                             @endif
                                                             @if($order->delivery_zone)
-                                                            <tr>
-                                                                <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Town</td>
-                                                                <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">
-                                                                    {{ $order->delivery_zone }}
-                                                                    @php
-                                                                        $location = \App\Models\Location::where('name', $order->delivery_zone)->first();
-                                                                    @endphp
-                                                                    @if($location && $location->sacco_rider)
-                                                                        <br><span style="color: #94a3b8; font-size: 11px; font-weight: normal;">({{ $location->sacco_rider }})</span>
-                                                                    @endif
-                                                                </td>
-                                                            </tr>
-                                                            @endif
+                                                             <tr>
+                                                                 <td style="padding-bottom: 6px; color: #94a3b8; font-size: 12px;">Town</td>
+                                                                 <td style="padding-bottom: 6px; color: #1e293b; font-size: 13px; font-weight: 600;">
+                                                                     {{ $order->delivery_zone }}
+                                                                     @if($order->carrier_type)
+                                                                         <br><span style="color: #6D31ED; font-size: 11px; font-weight: 600;">({{ $order->carrier_type === 'rider' ? '🛵 Bike Rider' : '🚐 Matatu SACCO' }}{{ $order->carrier_name ? ': '.$order->carrier_name : '' }})</span>
+                                                                     @else
+                                                                         @php
+                                                                             $location = \App\Models\Location::where('name', $order->delivery_zone)->first();
+                                                                         @endphp
+                                                                         @if($location && ($location->rider_name || $location->sacco_name || $location->sacco_rider))
+                                                                             <br><span style="color: #94a3b8; font-size: 11px; font-weight: normal;">({{ $location->rider_name ?: ($location->sacco_name ?: $location->sacco_rider) }})</span>
+                                                                         @endif
+                                                                     @endif
+                                                                 </td>
+                                                             </tr>
+                                                             @endif
                                                         @endif
                                                         @if($order->expected_shipping_date)
                                                         <tr>

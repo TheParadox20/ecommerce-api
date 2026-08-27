@@ -29,8 +29,12 @@ class LocationsExport implements FromCollection, WithHeadings, WithMapping
         return [
             'County',
             'Town/Urban Zone',
-            'SACCO/Rider',
             'Delivery Fee (KES)',
+            'SACCO/Rider',
+            'Rider Fee (KES)',
+            'Rider Name/Contact',
+            'SACCO Fee (KES)',
+            'SACCO Name/Stage',
         ];
     }
 
@@ -39,8 +43,12 @@ class LocationsExport implements FromCollection, WithHeadings, WithMapping
         return [
             $location->parent ? $location->parent->name : '',
             $location->name,
-            $location->sacco_rider,
             $location->delivery_fee,
+            $location->sacco_rider,
+            $location->rider_fee,
+            $location->rider_name,
+            $location->sacco_fee,
+            $location->sacco_name,
         ];
     }
 }

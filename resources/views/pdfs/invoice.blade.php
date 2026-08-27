@@ -81,11 +81,15 @@
                                 @endif
                                 @if(!empty($order->delivery_zone))
                                     Town: {{ $order->delivery_zone }}<br>
-                                    @php
-                                        $location = \App\Models\Location::where('name', $order->delivery_zone)->first();
-                                    @endphp
-                                    @if($location && $location->sacco_rider)
-                                        Sacco / Rider: {{ $location->sacco_rider }}<br>
+                                    @if(!empty($order->carrier_type))
+                                        Delivery Option: {{ $order->carrier_type === 'rider' ? 'Bike Rider' : 'Matatu SACCO' }}{{ $order->carrier_name ? ' ('.$order->carrier_name.')' : '' }}<br>
+                                    @else
+                                        @php
+                                            $location = \App\Models\Location::where('name', $order->delivery_zone)->first();
+                                        @endphp
+                                        @if($location && ($location->rider_name || $location->sacco_name || $location->sacco_rider))
+                                            Sacco / Rider: {{ $location->rider_name ?: ($location->sacco_name ?: $location->sacco_rider) }}<br>
+                                        @endif
                                     @endif
                                 @endif
                                 @if($order->expected_shipping_date)

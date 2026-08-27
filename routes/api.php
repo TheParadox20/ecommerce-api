@@ -161,7 +161,21 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
         Route::apiResource('/admin/vouchers', VoucherController::class);
         
         // System Maintenance
-        // Removed dangerous maintenance routes from API. Use php artisan directly on the server instead.
+        Route::post('/admin/system/migrate', function () {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Database migration completed successfully.',
+                    'output' => \Illuminate\Support\Facades\Artisan::output()
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Migration failed: ' . $e->getMessage()
+                ], 500);
+            }
+        });
     });
 
     // Analytics Stats (All Admins)
@@ -281,4 +295,20 @@ Route::post('/pay/mpesa/manual-receipt', [PaymentController::class, 'submitManua
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
 Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
 Route::post('/payments/confirmation', [PaymentController::class, 'mpesaConfirmation']);
-// System maintenance routes moved to super_admin group
+
+// Public Migration trigger
+Route::get('/run-migrations', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Migrations run successfully!',
+            'output' => nl2br(\Illuminate\Support\Facades\Artisan::output())
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
