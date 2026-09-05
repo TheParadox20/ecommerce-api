@@ -18,3 +18,17 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Google Merchant Center feeds & backups
+Google Merchant Center feed - Products source.xlsx
+Google Merchant Center feed - Products source.xlsx.bak
+*.xlsx
+*.xlsx.bak
+
+# Scratch data and database backups
+scratch/feed_data.json
+scratch/local_ngwindsongk_backup_pre_prod_import.sql
+scratch/*.json
+scratch/*.sql
+*.sql
+*.sql.gz
