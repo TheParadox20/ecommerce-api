@@ -7,8 +7,3 @@ Route::get('/', function () {
 });
 
 require __DIR__.'/auth.php';
-
-Route::get('/run-migrations-secret-url', function () {
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    return \Illuminate\Support\Facades\Artisan::output();
-});
