@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             RecipeSeeder::class,
             LocationSeeder::class,
+            TrackingSettingsSeeder::class,
         ]);
     }
 }

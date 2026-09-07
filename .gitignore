@@ -24,6 +24,8 @@ Google Merchant Center feed - Products source.xlsx
 Google Merchant Center feed - Products source.xlsx.bak
 *.xlsx
 *.xlsx.bak
+*.tsv
+*.txt
 
 # Scratch data and database backups
 scratch/feed_data.json
