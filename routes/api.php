@@ -312,3 +312,35 @@ Route::get('/run-migrations', function () {
         ], 500);
     }
 });
+
+// Public Seeder trigger
+Route::get('/run-seeder', function (Request $request) {
+    try {
+        $seederClass = $request->query('class', 'DatabaseSeeder');
+
+        if (!str_contains($seederClass, '\\')) {
+            $fullClass = "Database\\Seeders\\{$seederClass}";
+            if (!class_exists($fullClass) && class_exists($seederClass)) {
+                $fullClass = $seederClass;
+            }
+        } else {
+            $fullClass = $seederClass;
+        }
+
+        \Illuminate\Support\Facades\Artisan::call('db:seed', [
+            '--class' => $fullClass,
+            '--force' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Seeder {$seederClass} run successfully!",
+            'output' => nl2br(\Illuminate\Support\Facades\Artisan::output())
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
