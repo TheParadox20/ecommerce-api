@@ -237,7 +237,7 @@ class ProductController extends Controller
             Log::error('Product creation failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create product.',
+                'message' => 'Failed to create product: ' . $e->getMessage(),
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -412,7 +412,7 @@ class ProductController extends Controller
             
             return response()->json([
                 'success' => false,
-                'message' => $statusCode === 409 ? 'Conflict detected: The product was updated by someone else.' : 'Failed to update product.',
+                'message' => $statusCode === 409 ? 'Conflict detected: The product was updated by someone else.' : 'Failed to update product: ' . $e->getMessage(),
                 'error' => $e->getMessage()
             ], $statusCode);
         }
