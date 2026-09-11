@@ -8,6 +8,7 @@ use App\Models\Mpesa;
 use App\Models\Order;
 use App\Events\OrderPaymentSuccessful;
 use App\Events\OrderPaymentFailed;
+use App\Events\OrderPartialPaymentReceived;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\NewOrderReceived;
 use Illuminate\Support\Facades\Log;
@@ -370,18 +371,50 @@ class PaymentController extends Controller
         ]);
 
         if ($order) {
-            // Only update if not already marked as success (idempotent)
-            if ($order->payment_status !== 'success') {
-                $order->update([
-                    'payment_status'    => 'success',
-                    'payment_reference' => $transactionId,
-                ]);
-
-                OrderPaymentSuccessful::dispatch($order);
-
-                Log::info("M-Pesa Confirmation | Order '{$orderSlug}' marked as PAID | TransID: {$transactionId} | Amount: {$amount}");
-            } else {
+            // Only process if not already fully paid (idempotent guard)
+            if ($order->payment_status === 'success') {
                 Log::info("M-Pesa Confirmation | Order '{$orderSlug}' already marked as paid. Skipping. | TransID: {$transactionId}");
+            } else {
+                $amountPaid     = (float) $amount;
+                $amountExpected = (float) $order->total;
+
+                // Configurable tolerance (default 0 — exact match required)
+                // Set MPESA_TOLERANCE=5 in .env to allow up to KES 5 rounding variance
+                $tolerance = (float) config('app.mpesa_tolerance', 0);
+
+                if ($amountPaid <= 0) {
+                    // Zero or null amount — do not change status, just log a warning
+                    Log::warning("M-Pesa Confirmation | Order '{$orderSlug}' received zero/null amount. Status unchanged. | TransID: {$transactionId}");
+
+                } elseif ($amountPaid >= ($amountExpected - $tolerance)) {
+                    // ✅ Full payment (within tolerance) — mark as paid and notify buyer
+                    $order->update([
+                        'payment_status'    => 'success',
+                        'payment_reference' => $transactionId,
+                        'amount_paid'       => $amountPaid,
+                        'payment_notes'     => null,
+                    ]);
+
+                    OrderPaymentSuccessful::dispatch($order);
+
+                    Log::info("M-Pesa Confirmation | Order '{$orderSlug}' marked as PAID | TransID: {$transactionId} | Paid: {$amountPaid} | Expected: {$amountExpected}");
+
+                } else {
+                    // ⚠️ Underpayment — flag for admin review, DO NOT notify buyer
+                    $shortfall = $amountExpected - $amountPaid;
+                    $note      = "Underpayment via C2B Paybill: paid KES {$amountPaid}, expected KES {$amountExpected}, shortfall KES {$shortfall}. TransID: {$transactionId}.";
+
+                    $order->update([
+                        'payment_status'    => 'pending_verification',
+                        'payment_reference' => $transactionId,
+                        'amount_paid'       => $amountPaid,
+                        'payment_notes'     => $note,
+                    ]);
+
+                    OrderPartialPaymentReceived::dispatch($order, $amountPaid, $amountExpected, $transactionId);
+
+                    Log::warning("M-Pesa Confirmation | UNDERPAYMENT on Order '{$orderSlug}' | Paid: {$amountPaid} | Expected: {$amountExpected} | Shortfall: {$shortfall} | TransID: {$transactionId}");
+                }
             }
         } else {
             Log::warning("M-Pesa Confirmation | Order not found for BillRefNumber: '{$orderSlug}' | TransID: {$transactionId}");

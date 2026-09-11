@@ -38,6 +38,8 @@ class Order extends Model
         'delivery_county',
         'carrier_type',
         'carrier_name',
+        'amount_paid',
+        'payment_notes',
     ];
 
     public function updateOptimistically(array $attributes, $expectedVersion = null)

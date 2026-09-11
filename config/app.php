@@ -33,6 +33,7 @@ return [
     'MPESA_PASSKEY' => env('MPESA_PASSKEY'),
     'MPESA_SHORTCODE' => env('MPESA_SHORTCODE'),
     'MPESA_TILL_NUMBER' => env('MPESA_TILL_NUMBER'),
+    'mpesa_tolerance'   => env('MPESA_TOLERANCE', 0), // KES tolerance before flagging underpayment
 
     /*
     |--------------------------------------------------------------------------
