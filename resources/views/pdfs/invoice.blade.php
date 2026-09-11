@@ -40,7 +40,8 @@
                 </td>
                 <td class="invoice-title">
                     <h1>Invoice</h1>
-                    <div class="value">#{{ $order->id }}/{{ $order->created_at->format('m/Y') }}</div>
+                    <div class="value" style="margin-bottom: 2px;">#{{ $order->id }}/{{ $order->created_at->format('m/Y') }}</div>
+                    <div style="font-size: 12px; font-weight: bold; color: #6D31ED; margin-bottom: 6px;">Order Ref: {{ $order->slug }}</div>
                     <div style="margin-top: 5px;">
                         @if($order->payment_status === 'success')
                             <span style="background-color: #22c55e; color: white; padding: 5px 15px; border-radius: 5px; font-size: 12px; font-weight: bold; text-transform: uppercase;">Paid</span>
@@ -66,7 +67,11 @@
                     </td>
                     <td class="details-col" style="padding-left: 40px;">
                         <div class="label">Order Details</div>
-                        <div class="value">Date: {{ $order->created_at->format('M d, Y') }}</div>
+                        <div class="value" style="margin-bottom: 12px;">
+                            Order ID: #{{ $order->id }}<br>
+                            Order Ref: {{ $order->slug }}<br>
+                            Date: {{ $order->created_at->format('M d, Y') }}
+                        </div>
                         <div class="label">Fulfillment Details</div>
                         @if($order->delivery_method === 'pickup')
                             <div class="value" style="color: #6D31ED;">

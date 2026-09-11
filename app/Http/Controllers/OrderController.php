@@ -187,6 +187,49 @@ class OrderController extends Controller
                     $calculatedTotal += ($actualPrice * $sale['quantity']);
                 }
 
+                $itemsSubtotal = $calculatedTotal;
+
+                // If delivery method is delivery, ensure shipping charges apply (defaulting to county fee if town is unlisted/new)
+                if (($data['delivery_method'] ?? null) === 'delivery') {
+                    $parentCounty = null;
+                    if (!empty($data['delivery_county_id'])) {
+                        $parentCounty = \App\Models\Location::find($data['delivery_county_id']);
+                    } elseif (!empty($data['delivery_county'])) {
+                        $parentCounty = \App\Models\Location::where('name', $data['delivery_county'])->first();
+                    }
+
+                    if ($parentCounty) {
+                        $countyFee = (float) ($parentCounty->delivery_fee ?? 0);
+                        $townName = !empty($data['delivery_zone']) ? trim($data['delivery_zone']) : null;
+
+                        $existingTown = null;
+                        if ($townName) {
+                            $existingTown = \App\Models\Location::where('parent_id', $parentCounty->id)
+                                ->whereRaw('LOWER(name) = ?', [mb_strtolower($townName)])
+                                ->first();
+                        }
+
+                        // Check free delivery threshold from settings (default 6000)
+                        $freeDeliveryThreshold = (float) (\App\Models\WebsiteSetting::where('key', 'free_delivery_threshold_amount')->value('value') ?? 6000);
+                        $isFreeDelivery = ($itemsSubtotal >= $freeDeliveryThreshold && $freeDeliveryThreshold > 0);
+
+                        if (!$isFreeDelivery) {
+                            // If urban center is not listed on the delivery manifest or shipping is 0:
+                            if (!$existingTown) {
+                                if (empty($data['shipping']) || (float)$data['shipping'] == 0) {
+                                    $data['shipping'] = $countyFee;
+                                }
+                            } else {
+                                if (empty($data['shipping']) || (float)$data['shipping'] == 0) {
+                                    $data['shipping'] = (float) ($existingTown->delivery_fee ?? $countyFee);
+                                }
+                            }
+                        } else {
+                            $data['shipping'] = 0;
+                        }
+                    }
+                }
+
                 $calculatedTotal += ($data['shipping'] ?? 0);
 
                 // Apply voucher discount if present
@@ -236,7 +279,7 @@ class OrderController extends Controller
                             'name' => $townName,
                             'short_name' => $townName,
                             'parent_id' => $countyId,
-                            'delivery_fee' => $data['shipping'] ?? ($parentCounty ? $parentCounty->delivery_fee : null),
+                            'delivery_fee' => ($data['shipping'] && (float)$data['shipping'] > 0) ? $data['shipping'] : ($parentCounty ? $parentCounty->delivery_fee : null),
                         ]);
                     }
                 }
