@@ -296,19 +296,19 @@ Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback'])
 Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
 Route::post('/payments/confirmation', [PaymentController::class, 'mpesaConfirmation']);
 
-// Public Migration trigger - Re-comment after use for security
-Route::get('/run-migrations', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        return response()->json([
-            'success' => true,
-            'message' => 'Migrations run successfully!',
-            'output' => nl2br(\Illuminate\Support\Facades\Artisan::output())
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage()
-        ], 500);
-    }
-});
+// Public Migration trigger - Commented out for security
+// Route::get('/run-migrations', function () {
+//     try {
+//         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+//         return response()->json([
+//             'success' => true,
+//             'message' => 'Migrations run successfully!',
+//             'output' => nl2br(\Illuminate\Support\Facades\Artisan::output())
+//         ]);
+//     } catch (\Exception $e) {
+//         return response()->json([
+//             'success' => false,
+//             'error' => $e->getMessage()
+//         ], 500);
+//     }
+// });
