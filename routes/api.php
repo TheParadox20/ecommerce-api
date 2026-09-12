@@ -291,7 +291,6 @@ Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class,
 Route::get('/locations/counties', [App\Http\Controllers\LocationController::class, 'counties']);
 Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware('idempotent');
 Route::get('/pay/mpesa/status/{order_id}', [PaymentController::class, 'checkStatus']);
-Route::post('/pay/mpesa/manual-receipt', [PaymentController::class, 'submitManualReceipt']);
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
 Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
 Route::post('/payments/confirmation', [PaymentController::class, 'mpesaConfirmation']);
