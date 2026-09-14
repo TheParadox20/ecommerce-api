@@ -100,7 +100,7 @@ Route::middleware('no-cache-products')->group(function () {
 });
 
 // Orders (Public can create, but index/show/update/destroy are protected)
-Route::post('/orders', [App\Http\Controllers\OrderController::class, 'store'])->middleware('idempotent');
+Route::post('/orders', [App\Http\Controllers\OrderController::class, 'store'])->middleware(['idempotent', 'throttle:10,1']);
 
 // Cart (Handles its own auth logic)
 Route::apiResource('cart', CartController::class);
@@ -160,22 +160,7 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
         // Voucher Management
         Route::apiResource('/admin/vouchers', VoucherController::class);
         
-        // System Maintenance
-        Route::post('/admin/system/migrate', function () {
-            try {
-                \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Database migration completed successfully.',
-                    'output' => \Illuminate\Support\Facades\Artisan::output()
-                ]);
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Migration failed: ' . $e->getMessage()
-                ], 500);
-            }
-        });
+        // System Maintenance - Migrate route removed for security
     });
 
     // Analytics Stats (All Admins)
@@ -287,9 +272,9 @@ Route::middleware(['auth:sanctum', 'role:influencer'])->group(function () {
 Route::get('/logistics', [LogisticsController::class, 'index']);
 Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
 //payment related routes
-Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class, 'calculate']);
+Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class, 'calculate'])->middleware('throttle:10,1');
 Route::get('/locations/counties', [App\Http\Controllers\LocationController::class, 'counties']);
-Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware('idempotent');
+Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware(['idempotent', 'throttle:5,1']);
 Route::get('/pay/mpesa/status/{order_id}', [PaymentController::class, 'checkStatus']);
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
 Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
