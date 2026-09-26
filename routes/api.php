@@ -100,7 +100,7 @@ Route::middleware('no-cache-products')->group(function () {
 });
 
 // Orders (Public can create, but index/show/update/destroy are protected)
-Route::post('/orders', [App\Http\Controllers\OrderController::class, 'store'])->middleware(['idempotent', 'throttle:10,1']);
+Route::post('/orders', [App\Http\Controllers\OrderController::class, 'store'])->middleware(['idempotent', 'throttle:checkout-orders']);
 
 // Cart (Handles its own auth logic)
 Route::apiResource('cart', CartController::class);
@@ -272,9 +272,9 @@ Route::middleware(['auth:sanctum', 'role:influencer'])->group(function () {
 Route::get('/logistics', [LogisticsController::class, 'index']);
 Route::get('/admin/listing', [ProductsController::class, 'adminListing']);
 //payment related routes
-Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class, 'calculate'])->middleware('throttle:10,1');
+Route::post('/delivery-fee', [App\Http\Controllers\DeliveryFeeController::class, 'calculate'])->middleware('throttle:delivery-fee');
 Route::get('/locations/counties', [App\Http\Controllers\LocationController::class, 'counties']);
-Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware(['idempotent', 'throttle:5,1']);
+Route::post('/pay/mpesa', [PaymentController::class, 'mpesaSTK'])->middleware(['idempotent', 'throttle:checkout-mpesa']);
 Route::get('/pay/mpesa/status/{order_id}', [PaymentController::class, 'checkStatus']);
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
 Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
