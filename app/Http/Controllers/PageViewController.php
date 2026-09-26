@@ -50,18 +50,47 @@ class PageViewController extends Controller
             // Silent fail
         }
 
-        PageView::create([
-            'path' => $request->input('path'),
-            'referrer' => $request->input('referrer'),
-            'session_id' => $request->input('session_id'),
-            'user_agent' => $userAgent,
-            'device_type' => $deviceType,
-            'browser' => $browser,
-            'user_id' => auth('sanctum')->id(),
-            'country' => $location['country'],
-            'country_code' => $location['countryCode'],
-            'city' => $location['city'],
-        ]);
+        // Clean path and strip ad/campaign tracking query parameters
+        $rawPath = (string) ($request->input('path') ?? '/');
+        $parsedUrl = parse_url($rawPath);
+        $pathOnly = $parsedUrl['path'] ?? '/';
+        
+        if (isset($parsedUrl['query'])) {
+            parse_str($parsedUrl['query'], $queryParams);
+            $trackingKeys = ['fbclid', 'gclid', 'gbraid', 'wbraid', 'msclkid', 'twclid', 'ttclid', '_ga', '_gl', 'ref_src', 'igshid', 'mc_cid', 'mc_eid'];
+            
+            $filteredParams = array_filter($queryParams, function ($key) use ($trackingKeys) {
+                $k = strtolower($key);
+                return !in_array($k, $trackingKeys) && !str_starts_with($k, 'utm_');
+            }, ARRAY_FILTER_USE_KEY);
+
+            $cleanQuery = http_build_query($filteredParams);
+            $cleanPath = $cleanQuery ? "{$pathOnly}?{$cleanQuery}" : $pathOnly;
+        } else {
+            $cleanPath = $pathOnly;
+        }
+
+        $safePath = mb_substr($cleanPath, 0, 255);
+        $safeReferrer = $request->input('referrer') ? mb_substr((string) $request->input('referrer'), 0, 2048) : null;
+        $safeSessionId = $request->input('session_id') ? mb_substr((string) $request->input('session_id'), 0, 255) : null;
+
+        try {
+            PageView::create([
+                'path' => $safePath,
+                'referrer' => $safeReferrer,
+                'session_id' => $safeSessionId,
+                'user_agent' => $userAgent,
+                'device_type' => $deviceType,
+                'browser' => $browser,
+                'user_id' => auth('sanctum')->id(),
+                'country' => $location['country'] ?? 'Unknown',
+                'country_code' => $location['countryCode'] ?? '??',
+                'city' => $location['city'] ?? 'Unknown',
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('PageView tracking failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Tracking recorded with warning'], 202);
+        }
 
         return response()->json(['success' => true], 201);
     }
