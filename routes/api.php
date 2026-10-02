@@ -288,22 +288,3 @@ Route::get('/pay/mpesa/status/{order_id}', [PaymentController::class, 'checkStat
 Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback']);
 Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
 Route::post('/payments/confirmation', [PaymentController::class, 'mpesaConfirmation']);
-
-// Migration Route — cPanel deployments
-Route::get('/run-migrations', function () {
-    try {
-        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        $output = \Illuminate\Support\Facades\Artisan::output();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Migrations run successfully!',
-            'output'  => nl2br($output),
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error'   => $e->getMessage(),
-        ], 500);
-    }
-});
