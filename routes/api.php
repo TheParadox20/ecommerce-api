@@ -289,20 +289,11 @@ Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback'])
 Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
 Route::post('/payments/confirmation', [PaymentController::class, 'mpesaConfirmation']);
 
-// Secure Migration Route — cPanel deployments (protected by secret key)
-Route::get('/run-migrations', function (\Illuminate\Http\Request $request) {
-    $secret = config('app.migrate_secret');
-
-    if (! $secret || $request->header('X-Migrate-Secret') !== $secret) {
-        return response()->json(['success' => false, 'message' => 'Unauthorized.'], 401);
-    }
-
+// Migration Route — cPanel deployments
+Route::get('/run-migrations', function () {
     try {
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         $output = \Illuminate\Support\Facades\Artisan::output();
-
-        \Illuminate\Support\Facades\Artisan::call('route:cache');
-        \Illuminate\Support\Facades\Artisan::call('config:cache');
 
         return response()->json([
             'success' => true,
