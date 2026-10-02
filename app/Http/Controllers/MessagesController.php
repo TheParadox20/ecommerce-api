@@ -38,8 +38,11 @@ class MessagesController extends Controller
                 config('mail.from.address'),
             ]));
 
-            Mail::to($recipients)->send(new ContactMessageReceived($msg));
-            Mail::to($msg->email)->send(new ContactMessageConfirmation($msg));
+            // Use the dedicated 'info' mailer if INFO_MAIL_USERNAME is present, else use default mailer
+            $mailer = config('mail.mailers.info.username') ? Mail::mailer('info') : Mail::mailer();
+
+            $mailer->to($recipients)->send(new ContactMessageReceived($msg));
+            $mailer->to($msg->email)->send(new ContactMessageConfirmation($msg));
         } catch (\Exception $e) {
             Log::error('Contact email failed: ' . $e->getMessage());
         }
