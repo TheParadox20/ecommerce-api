@@ -33,7 +33,12 @@ class MessagesController extends Controller
         ]);
 
         try {
-            Mail::to(config('mail.from.address'))->send(new ContactMessageReceived($msg));
+            $recipients = array_unique(array_filter([
+                'info@ngwindsongk.com',
+                config('mail.from.address'),
+            ]));
+
+            Mail::to($recipients)->send(new ContactMessageReceived($msg));
             Mail::to($msg->email)->send(new ContactMessageConfirmation($msg));
         } catch (\Exception $e) {
             Log::error('Contact email failed: ' . $e->getMessage());
