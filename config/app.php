@@ -28,6 +28,7 @@ return [
 
     'env' => env('APP_ENV', 'production'),
     'TIARA_KEY' => env('TIARACONNECT_API_KEY'),
+    'migrate_secret' => env('MIGRATE_SECRET'),
     'MPESA_CONSUMER_KEY' => env('MPESA_CONSUMER_KEY'),
     'MPESA_CONSUMER_SECRET' => env('MPESA_CONSUMER_SECRET'),
     'MPESA_PASSKEY' => env('MPESA_PASSKEY'),

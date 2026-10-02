@@ -68,6 +68,10 @@ Route::post('/register/influencer', [RegistrationController::class, 'influencerS
 // Analytics
 Route::post('/pageviews', [PageViewController::class, 'store'])->middleware('throttle:60,1');
 
+// Contact Form Submissions (public)
+Route::post('/messages', [MessagesController::class, 'store'])->middleware('throttle:10,1');
+
+
 // Voucher validation (public)
 Route::post('/vouchers/validate', [VoucherController::class, 'validateCode']);
 Route::get('/menu', function () {
@@ -198,6 +202,11 @@ Route::middleware(['auth:sanctum', 'role:super_admin|admin,sanctum'])->group(fun
     Route::post('/admin/locations/import', [LocationController::class, 'import']);
     Route::apiResource('/admin/locations', LocationController::class)->except(['show']);
 
+    // Admin Contact Messages
+    Route::get('/admin/messages', [MessagesController::class, 'index']);
+    Route::get('/admin/messages/{id}', [MessagesController::class, 'show']);
+    Route::delete('/admin/messages/{id}', [MessagesController::class, 'destroy']);
+
     // Admin Comment Moderation
     Route::get('/admin/comments', [BlogCommentController::class, 'index']);
     Route::put('/admin/comments/{id}/approve', [BlogCommentController::class, 'approve']);
@@ -280,19 +289,30 @@ Route::post('/mpesa/mpesaCallback', [PaymentController::class, 'mpesaCallback'])
 Route::post('/payments/validation', [PaymentController::class, 'mpesaValidation']);
 Route::post('/payments/confirmation', [PaymentController::class, 'mpesaConfirmation']);
 
-// Public Migration trigger - Commented out for security
-// Route::get('/run-migrations', function () {
-//     try {
-//         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-//         return response()->json([
-//             'success' => true,
-//             'message' => 'Migrations run successfully!',
-//             'output' => nl2br(\Illuminate\Support\Facades\Artisan::output())
-//         ]);
-//     } catch (\Exception $e) {
-//         return response()->json([
-//             'success' => false,
-//             'error' => $e->getMessage()
-//         ], 500);
-//     }
-// });
+// Secure Migration Route — cPanel deployments (protected by secret key)
+Route::get('/run-migrations', function (\Illuminate\Http\Request $request) {
+    $secret = config('app.migrate_secret');
+
+    if (! $secret || $request->header('X-Migrate-Secret') !== $secret) {
+        return response()->json(['success' => false, 'message' => 'Unauthorized.'], 401);
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $output = \Illuminate\Support\Facades\Artisan::output();
+
+        \Illuminate\Support\Facades\Artisan::call('route:cache');
+        \Illuminate\Support\Facades\Artisan::call('config:cache');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Migrations run successfully!',
+            'output'  => nl2br($output),
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error'   => $e->getMessage(),
+        ], 500);
+    }
+});

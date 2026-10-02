@@ -16,7 +16,7 @@ class FooterSettingsSeeder extends Seeder
             // Contact Info
             [
                 'key' => 'footer_phone',
-                'value' => '+254 718 156 421',
+                'value' => '+254 795 666 840',
                 'group' => 'footer',
                 'type' => 'text'
             ],
