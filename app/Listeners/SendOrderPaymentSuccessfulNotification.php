@@ -14,7 +14,7 @@ class SendOrderPaymentSuccessfulNotification
     public function handle(OrderPaymentSuccessful $event): void
     {
         $order = $event->order;
-        $order->load(['orderDetail', 'sales.product', 'sales.productVariation']);
+        $order->load(['orderDetail', 'sales.product', 'sales.productVariation.attributeValues']);
 
         $client = new Client();
         $apiKey = config('app.TIARA_KEY');
@@ -63,14 +63,30 @@ class SendOrderPaymentSuccessfulNotification
         // 3. Send SMS confirmation to Buyer
         if ($order->orderDetail && $order->orderDetail->phone) {
             try {
-                // Format items for SMS
+                // Format items for SMS with variation attribute (e.g. 250g, 500 grams, 1KG, 50pcs, Pink)
                 $itemsSummary = $order->sales->map(function($sale) {
-                    $size = $sale->productVariation->name ?? 'Std';
-                    return "{$sale->product->name} x{$sale->quantity} ({$size})";
+                    $productName = $sale->product?->name ?? 'Item';
+                    $variation = $sale->productVariation;
+
+                    $attribute = $variation?->attribute_value
+                        ?: ($variation?->attributeValues?->first()?->value ?: $variation?->attribute_name);
+
+                    if ($attribute) {
+                        return "{$productName} x{$sale->quantity} ({$attribute})";
+                    }
+
+                    return "{$productName} x{$sale->quantity}";
                 })->implode(', ');
 
-                $shippingDate = \Carbon\Carbon::parse($order->expected_shipping_date)->format('M d');
-                $buyerMessage = "Order #{$order->slug} Confirmed! Items: {$itemsSummary}. Total: KES " . number_format($order->total) . ". Delivery: {$order->orderDetail->address}. Expected Shipment: {$shippingDate}. Thank you for shopping with NG Windsong Kenya!";
+                $fulfillment = ($order->delivery_method === 'pickup' || !empty($order->pickup_station))
+                    ? 'Pickup: ' . ($order->pickup_station ?: 'Pickup Station')
+                    : 'Delivery: ' . ($order->orderDetail?->address ?: ($order->delivery_zone ?: 'To your address'));
+
+                $shippingDate = $order->expected_shipping_date
+                    ? \Carbon\Carbon::parse($order->expected_shipping_date)->format('M d')
+                    : \Carbon\Carbon::parse(\App\Models\Order::calculateShippingDate($order->created_at))->format('M d');
+
+                $buyerMessage = "Order #{$order->slug} Confirmed! Items: {$itemsSummary}. Total: KES " . number_format($order->total) . ". {$fulfillment}. Expected Shipment: {$shippingDate}. Thank you for shopping with NG Windsong Kenya!";
 
                 $to = '254' . preg_replace('/\D/', '', ltrim($order->orderDetail->phone, '+2540'));
 
