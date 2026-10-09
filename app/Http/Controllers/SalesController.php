@@ -50,9 +50,38 @@ class SalesController extends Controller
                 break;
         }
 
+        // Compile summary statistics across all matching records in preselection
+        $statsQuery = Order::query();
+        $this->applyOrderFilters($statsQuery, $request);
+
+        $totalOrders = (clone $statsQuery)->count();
+        $netRevenue = (float) ((clone $statsQuery)->where('payment_status', 'success')->sum('total'));
+        $grossRevenue = (float) ((clone $statsQuery)->sum('total'));
+        $pendingCount = (clone $statsQuery)->where('status', 'pending')->count();
+        $completedCount = (clone $statsQuery)->where('status', 'completed')->count();
+        $processingCount = (clone $statsQuery)->where('status', 'processing')->count();
+        $cancelledCount = (clone $statsQuery)->where('status', 'cancelled')->count();
+        $pendingVerificationCount = (clone $statsQuery)->where('payment_status', 'pending_verification')->count();
+        $totalItems = (int) \App\Models\Sale::whereIn('order_id', (clone $statsQuery)->select('id'))->sum('quantity');
+        $avgOrderValue = $totalOrders > 0 ? round($grossRevenue / $totalOrders, 2) : 0;
+
         $orders = $query->paginate($request->get('per_page', 20));
 
-        return response()->json($orders);
+        $responseData = $orders->toArray();
+        $responseData['summary'] = [
+            'total' => $totalOrders,
+            'revenue' => $netRevenue,
+            'gross_revenue' => $grossRevenue,
+            'pending' => $pendingCount,
+            'completed' => $completedCount,
+            'processing' => $processingCount,
+            'cancelled' => $cancelledCount,
+            'pending_verification' => $pendingVerificationCount,
+            'total_items' => $totalItems,
+            'avg_order_value' => $avgOrderValue,
+        ];
+
+        return response()->json($responseData);
     }
 
     /**
@@ -179,6 +208,10 @@ class SalesController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+
+        if ($request->filled('order_type')) {
+            $query->where('order_type', $request->order_type);
         }
 
         if ($request->filled('payment_status')) {

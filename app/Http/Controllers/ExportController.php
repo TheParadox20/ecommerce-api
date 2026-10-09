@@ -17,10 +17,15 @@ class ExportController extends Controller
         $orderType = $request->query('order_type');
         $paymentStatus = $request->query('payment_status');
         $search = $request->query('search');
+        $preset = $request->query('preset');
         
-        $filename = 'sales_report_' . now()->format('Y-m-d') . '.xlsx';
+        $cleanPreset = $preset ? strtolower(preg_replace('/[^A-Za-z0-9_]/', '_', $preset)) . '_' : '';
+        $filename = 'sales_intelligence_' . $cleanPreset . now()->format('Y-m-d') . '.xlsx';
         
-        return Excel::download(new SalesExport($dateFrom, $dateTo, $status, $orderType, $paymentStatus, $search), $filename);
+        return Excel::download(
+            new SalesExport($dateFrom, $dateTo, $status, $orderType, $paymentStatus, $search, $preset),
+            $filename
+        );
     }
 
     public function deliveries(Request $request)

@@ -47,7 +47,7 @@ class DeliveriesExport implements FromQuery, WithMapping, WithHeadings, ShouldAu
             $order->delivery_method,
             $order->pickup_station ?? 'N/A',
             $order->status,
-            $order->sales->map(fn($s) => $s->product->name . " (x" . $s->quantity . ")")->implode(', '),
+            $order->sales->map(fn($s) => ($s->product?->name ?? ('Item #' . ($s->product_id ?? $s->id))) . " (x" . $s->quantity . ")")->implode(', '),
         ];
     }
 
